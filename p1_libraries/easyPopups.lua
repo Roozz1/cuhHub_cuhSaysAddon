@@ -28,7 +28,7 @@ easyPopupsLibrary = {
 
     physical = {
         ---@param attach number|nil 0, nil or object id/vehicle id
-        ---@param player player
+        ---@param player player|nil
         create = function(text, pos, attach, id, player, renderDistance)
             -- defaults
             if not renderDistance then
@@ -83,22 +83,20 @@ easyPopupsLibrary = {
                     self.properties.player = newPlayer or self.properties.player
                     self.properties.renderDistance = newRenderDistance or self.properties.renderDistance
 
-                    if not newAttach then
-                        return
+                    if newAttach then
+                        local new_idType = miscellaneousLibrary.isVehicleOrObject(newAttach)
+                        local new_obj_id = 0
+                        local new_veh_id = 0
+
+                        if new_idType == "object" then
+                            new_obj_id = attach
+                        elseif new_idType == "vehicle" then
+                            new_veh_id = attach
+                        end
+
+                        self.properties.obj_id = new_obj_id
+                        self.properties.veh_id = new_veh_id
                     end
-
-                    local new_idType = miscellaneousLibrary.isVehicleOrObject(newAttach)
-                    local new_obj_id = 0
-                    local new_veh_id = 0
-
-                    if new_idType == "object" then
-                        new_obj_id = attach
-                    elseif new_idType == "vehicle" then
-                        new_veh_id = attach
-                    end
-
-                    self.properties.obj_id = new_obj_id
-                    self.properties.veh_id = new_veh_id
 
                     self:refresh()
                 end,
