@@ -4008,7 +4008,7 @@ easyPopupsLibrary = {
 
     physical = {
         ---@param attach number|nil 0, nil or object id/vehicle id
-        ---@param player player
+        ---@param player player|nil
         create = function(text, pos, attach, id, player, renderDistance)
             -- defaults
             if not renderDistance then
@@ -4063,22 +4063,20 @@ easyPopupsLibrary = {
                     self.properties.player = newPlayer or self.properties.player
                     self.properties.renderDistance = newRenderDistance or self.properties.renderDistance
 
-                    if not newAttach then
-                        return
+                    if newAttach then
+                        local new_idType = miscellaneousLibrary.isVehicleOrObject(newAttach)
+                        local new_obj_id = 0
+                        local new_veh_id = 0
+
+                        if new_idType == "object" then
+                            new_obj_id = attach
+                        elseif new_idType == "vehicle" then
+                            new_veh_id = attach
+                        end
+
+                        self.properties.obj_id = new_obj_id
+                        self.properties.veh_id = new_veh_id
                     end
-
-                    local new_idType = miscellaneousLibrary.isVehicleOrObject(newAttach)
-                    local new_obj_id = 0
-                    local new_veh_id = 0
-
-                    if new_idType == "object" then
-                        new_obj_id = attach
-                    elseif new_idType == "vehicle" then
-                        new_veh_id = attach
-                    end
-
-                    self.properties.obj_id = new_obj_id
-                    self.properties.veh_id = new_veh_id
 
                     self:refresh()
                 end,
@@ -4815,22 +4813,30 @@ cuhFramework.callbacks.onPlayerJoin:connect(function(steam_id, name, peer_id, ad
         return
     end
 
-    -- UI
-    local status = cuhFramework.ui.screen.create(peer_id + 15000, "Participant", 0, -0.9, player)
-    cuhFramework.utilities.loop.create(0.5, function(id)
+    -- status ui and nametag
+    local object_id = player:get_character()
+
+    local nametag = easyPopupsLibrary.physical.create(player.properties.name, matrix.translation(0, 3, 0), object_id, peer_id + 17000, nil, 5)
+    local status = cuhFramework.ui.screen.create(peer_id + 15000, "Participant", 0, -0.6, player)
+
+    cuhFramework.utilities.loop.create(0.1, function(id)
         if not cuhFramework.players.getPlayerByPeerId(peer_id) then
             cuhFramework.utilities.loop.ongoingLoops[id] = nil
             return
         end
 
+        local to_show = cuhFramework.utilities.miscellaneous.switchbox(
+            "Participant [:)]",
+            "Eliminated [!]",
+            playerStatesLibrary.hasState(player, "disqualify")
+        )
+
         if status then
-            status:edit(
-                cuhFramework.utilities.miscellaneous.switchbox(
-                    "Participant [:)]",
-                    "Eliminated [!]",
-                    playerStatesLibrary.hasState(player, "disqualify")
-                )
-            )
+            status:edit(to_show)
+        end
+
+        if nametag then
+            nametag:edit(player.properties.name.."\n"..to_show)
         end
     end)
 
@@ -5048,6 +5054,7 @@ end, "")
     UI IDs:
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
+        peer_id + 17000 = Nametag
 ]]
 --------------
 
