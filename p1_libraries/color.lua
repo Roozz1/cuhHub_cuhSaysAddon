@@ -6,26 +6,9 @@
 colorLibrary = {
     RGB = {
         basicColors = {
-            red = {
-                h = 0,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            green = {
-                h = 120,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            blue = {
-                h = 240,
-                s = 100,
-                v = 100,
-                a = 255
-            },
+            red = colorLibrary.RGB.new(255, 0, 0, 255),
+            green = colorLibrary.RGB.new(0, 255, 0, 255),
+            blue = colorLibrary.RGB.new(0, 0, 255, 255)
         },
 
         ---@return colorRGB
@@ -82,26 +65,9 @@ colorLibrary = {
 
     HSV = {
         basicColors = {
-            red = {
-                h = 0,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            green = {
-                h = 120,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            blue = {
-                h = 240,
-                s = 100,
-                v = 100,
-                a = 255
-            },
+            red = colorLibrary.HSV.new(0, 100, 100, 255),
+            green = colorLibrary.HSV.new(120, 100, 100, 255),
+            blue = colorLibrary.HSV.new(240, 100, 100, 255)
         },
 
         ---@return colorHSV
