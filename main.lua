@@ -71,7 +71,7 @@ cuhFramework.utilities.loop.create(0.01, function()
     toTeleport = cuhFramework.utilities.matrix.offsetPosition(toTeleport, 0, 15, 15)
 
     for i, v in pairs(disqualified) do
-        v:teleport()
+        v:teleport(toTeleport)
     end
 end)
 
@@ -79,7 +79,7 @@ end)
 -- Zones
 ----------------------------------------------------------------
 cuhFramework.customZones.createPlayerZone(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0), config.game.playAreaSize, function(player, entered) ---@param player player
-    if not entered then
+    if not entered or player.properties.admin then
         player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)) -- so much repetition but oh well
         chatAnnounce("You cannot leave the play area.", player)
     end
