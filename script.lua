@@ -11,7 +11,7 @@ config = {
     debugShouldLog = true,
 
     game = {
-        playAreaSize = 30
+        playAreaSize = 60
     },
 
     info = {
@@ -3709,12 +3709,6 @@ announceLibrary = {
 ------------- Library
 colorLibrary = {
     RGB = {
-        basicColors = {
-            red = colorLibrary.RGB.new(255, 0, 0, 255),
-            green = colorLibrary.RGB.new(0, 255, 0, 255),
-            blue = colorLibrary.RGB.new(0, 0, 255, 255)
-        },
-
         ---@return colorRGB
         new = function(r, g, b, a)
             return {
@@ -3768,12 +3762,6 @@ colorLibrary = {
     },
 
     HSV = {
-        basicColors = {
-            red = colorLibrary.HSV.new(0, 100, 100, 255),
-            green = colorLibrary.HSV.new(120, 100, 100, 255),
-            blue = colorLibrary.HSV.new(240, 100, 100, 255)
-        },
-
         ---@return colorHSV
         new = function(h, s, v, a)
             return {
@@ -4607,7 +4595,7 @@ playerStatesLibrary = {
             playerStates[state] = {}
         end
 
-        playerStates[state][player.properties.peer_id] = true
+        playerStates[state][player.properties.peer_id] = player
         return true
     end,
 
@@ -5100,7 +5088,7 @@ cuhFramework.utilities.loop.create(0.01, function()
     toTeleport = cuhFramework.utilities.matrix.offsetPosition(toTeleport, 0, 15, 15)
 
     for i, v in pairs(disqualified) do
-        v:teleport()
+        v:teleport(toTeleport)
     end
 end)
 
@@ -5108,7 +5096,7 @@ end)
 -- Zones
 ----------------------------------------------------------------
 cuhFramework.customZones.createPlayerZone(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0), config.game.playAreaSize, function(player, entered) ---@param player player
-    if not entered then
+    if not entered or player.properties.admin then
         player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)) -- so much repetition but oh well
         chatAnnounce("You cannot leave the play area.", player)
     end
