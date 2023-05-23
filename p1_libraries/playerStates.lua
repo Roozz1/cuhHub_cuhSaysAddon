@@ -14,7 +14,7 @@ playerStatesLibrary = {
             playerStates[state] = {}
         end
 
-        playerStates[state][player.properties.peer_id] = true
+        playerStates[state][player.properties.peer_id] = player
         return true
     end,
 
