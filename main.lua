@@ -53,7 +53,7 @@ globalStorage = storageLibrary.new("Global Storage")
 
 ------------- Other
 -- Set Spawn
-globalStorage:add("spawn_point", matrix.translation(0, 5, 0))
+globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 
 ----------------------------------------------------------------
 -- Loops
@@ -79,7 +79,7 @@ end)
 -- Zones
 ----------------------------------------------------------------
 cuhFramework.customZones.createPlayerZone(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0), config.game.playAreaSize, function(player, entered) ---@param player player
-    if not entered or player.properties.admin then
+    if not entered and not player.properties.admin and not debounceLibrary.debounce("left_spawn_point_"..player.properties.peer_id, 0.5) then
         player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)) -- so much repetition but oh well
         chatAnnounce("You cannot leave the play area.", player)
     end
