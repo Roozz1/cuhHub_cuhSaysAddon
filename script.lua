@@ -10,6 +10,10 @@ config = {
     debugEnabled = true,
     debugShouldLog = true,
 
+    game = {
+        playAreaSize = 30
+    },
+
     info = {
         addon_name = "Cuh Says",
         creator = "cuh4#7366",
@@ -4864,6 +4868,49 @@ cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, a
 end)
 
 -----------------
+-- [Library | Folder: p2_callbackHandlers] player_open_map.lua
+-----------------
+---------------------------------------
+------------- Player Open Map
+---------------------------------------
+
+cuhFramework.callbacks.onToggleMap:connect(function(peer_id, opened)
+    -- Get variables
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+
+    -- Checks
+    if not player then
+        return
+    end
+
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) then
+        return
+    end
+
+    -- Show play area
+    local spawnPoint = globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+    local color = colorLibrary.RGB.new(0, 125, 255, 255)
+
+    server.removeMapObject(peer_id, peer_id + 15000)
+    server.addMapObject(
+        peer_id,
+        peer_id + 15000,
+        0,
+        9,
+        spawnPoint[13],
+        spawnPoint[15],
+        0,
+        0,
+        0,
+        0,
+        "Play Area",
+        config.game.playAreaSize,
+        "You cannot leave this area.",
+        colorLibrary.RGB.unpack(color)
+    )
+end)
+
+-----------------
 -- [Library | Folder: p3_commands] disqualify.lua
 -----------------
 ---------------------------------------
@@ -4993,6 +5040,9 @@ end, "")
     Created by cuh4#7366 [cuhHub Developer]
 
     This addon uses cuhFramework, see above.
+
+    UI IDs:
+        peer_id + 15000 = Play Area Map Object
 ]]
 --------------
 
@@ -5020,6 +5070,21 @@ getRandomPlayer = function()
 end
 
 ----------------------------------------------------------------
+-- Setup
+----------------------------------------------------------------
+------------- Inits
+debugLibrary.initialize()
+easyPopupsLibrary.initialize()
+eventsLibrary.initialize()
+
+------------- Storages
+globalStorage = storageLibrary.new("Global Storage")
+
+------------- Other
+-- Set Spawn
+globalStorage:add("spawn_point", matrix.translation(0, 5, 0))
+
+----------------------------------------------------------------
 -- Loops
 ----------------------------------------------------------------
 ------------- Teleport disqualified players away
@@ -5040,16 +5105,11 @@ cuhFramework.utilities.loop.create(0.01, function()
 end)
 
 ----------------------------------------------------------------
--- Setup
+-- Zones
 ----------------------------------------------------------------
-------------- Inits
-debugLibrary.initialize()
-easyPopupsLibrary.initialize()
-eventsLibrary.initialize()
-
-------------- Storages
-globalStorage = storageLibrary.new("Global Storage")
-
-------------- Other
--- Set Spawn
-globalStorage:add("spawn_point", matrix.translation(0, 5, 0))
+cuhFramework.customZones.createPlayerZone(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0), config.game.playAreaSize, function(player, entered) ---@param player player
+    if not entered then
+        player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)) -- so much repetition but oh well
+        chatAnnounce("You cannot leave the play area.", player)
+    end
+end)
