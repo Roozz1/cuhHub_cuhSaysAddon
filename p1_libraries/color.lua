@@ -5,12 +5,6 @@
 ------------- Library
 colorLibrary = {
     RGB = {
-        basicColors = {
-            red = colorLibrary.RGB.new(255, 0, 0, 255),
-            green = colorLibrary.RGB.new(0, 255, 0, 255),
-            blue = colorLibrary.RGB.new(0, 0, 255, 255)
-        },
-
         ---@return colorRGB
         new = function(r, g, b, a)
             return {
@@ -64,12 +58,6 @@ colorLibrary = {
     },
 
     HSV = {
-        basicColors = {
-            red = colorLibrary.HSV.new(0, 100, 100, 255),
-            green = colorLibrary.HSV.new(120, 100, 100, 255),
-            blue = colorLibrary.HSV.new(240, 100, 100, 255)
-        },
-
         ---@return colorHSV
         new = function(h, s, v, a)
             return {
