@@ -3706,26 +3706,9 @@ announceLibrary = {
 colorLibrary = {
     RGB = {
         basicColors = {
-            red = {
-                h = 0,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            green = {
-                h = 120,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            blue = {
-                h = 240,
-                s = 100,
-                v = 100,
-                a = 255
-            },
+            red = colorLibrary.RGB.new(255, 0, 0, 255),
+            green = colorLibrary.RGB.new(0, 255, 0, 255),
+            blue = colorLibrary.RGB.new(0, 0, 255, 255)
         },
 
         ---@return colorRGB
@@ -3782,26 +3765,9 @@ colorLibrary = {
 
     HSV = {
         basicColors = {
-            red = {
-                h = 0,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            green = {
-                h = 120,
-                s = 100,
-                v = 100,
-                a = 255
-            },
-
-            blue = {
-                h = 240,
-                s = 100,
-                v = 100,
-                a = 255
-            },
+            red = colorLibrary.HSV.new(0, 100, 100, 255),
+            green = colorLibrary.HSV.new(120, 100, 100, 255),
+            blue = colorLibrary.HSV.new(240, 100, 100, 255)
         },
 
         ---@return colorHSV
@@ -4814,6 +4780,30 @@ storageLibrary = {
 }
 
 -----------------
+-- [Library | Folder: p2_callbackHandlers] character_load.lua
+-----------------
+---------------------------------------
+------------- Character Load
+---------------------------------------
+
+cuhFramework.callbacks.onObjectLoad:connect(function(object_id)
+    -- Get variables
+    local player = cuhFramework.players.getPlayerByObjectId(object_id)
+
+    -- Checks
+    if not player then
+        return
+    end
+
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) then
+        return
+    end
+
+    -- Teleport
+    player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0))
+end)
+
+-----------------
 -- [Library | Folder: p2_callbackHandlers] player_join.lua
 -----------------
 ---------------------------------------
@@ -4874,157 +4864,96 @@ cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, a
 end)
 
 -----------------
--- [Library | Folder: p3_commands] help.lua
+-- [Library | Folder: p3_commands] disqualify.lua
 -----------------
 ---------------------------------------
-------------- Command - Shows a help message
+------------- Command - Disqualify
 ---------------------------------------
 
-------------- ?help
-cuhFramework.commands.create("help", {"h"}, false, function(message, peer_id, admin, auth, command, ...)
-    -- Get player
-    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
-
-    -- Check
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) then
-        return
-    end
-
-    -- Pack commands into table
-    local commands = {}
-
-    for i, v in pairs(cuhFramework.commands.registeredCommands) do
-        -- probably an admin/internal command
-        if v.description == "" then
-            goto continue
-        end
-
-        -- new shorthands stuff
-        local shorthands = {}
-        for _, shorthand in pairs(v.shorthands) do
-            table.insert(shorthands, "?"..shorthand)
-        end
-
-        -- add to commands list but nice and formatted
-        table.insert(commands, "?"..v.command_name.."\n     \\___"..table.concat(shorthands, ", ").."\n     \\___"..v.description)
-
-        ::continue::
-    end
-
-    -- Show commands and help message
-    if not commands[1] then
-        commands[1] = "This addon has no commands."
-    end
-
-    chatAnnounce("// Help\n"..config.info.help_message.."\n\n// Commands:\n"..table.concat(commands, "\n"), player)
-end, "Shows all commands along with help.")
-
------------------
--- [Library | Folder: p3_commands] mute.lua
------------------
----------------------------------------
-------------- Command - Mutes/unmutes a player
----------------------------------------
-
-------------- Mute Handler
-local muted = {}
-local random = {"#", "!", "?"}
-
----@param message message
-messageLibrary.events.onMessageSend:connect(function(message)
-    for i, v in pairs(muted) do
-        -- quick check
-        if not v[message.properties.author.properties.peer_id] then -- the person who sent this message isnt muted by v, so go to next mute data thing
-            goto continue
-        end
-
-        -- get thy player
-        local player = cuhFramework.players.getPlayerByPeerId(i)
-
-        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) then -- player probably left
-            goto continue
-        end
-
-        -- edit/delete message
-        if config.deleteInsteadOfEdit then
-            message:delete(player)
-        else
-            -- cool new message styling thing
-            local new = ""
-
-            for i1 = 1, cuhFramework.utilities.number.clamp(#message.properties.content, 1, #message.properties.content) do
-                local letter = message.properties.content:sub(i1, i1)
-                local to_add = " "
-
-                if letter ~= " " then
-                    to_add = cuhFramework.utilities.table.getRandomValue(random)
-                end
-
-                new = new..to_add
-            end
-
-            -- edit message
-            message:edit(new.." [MUTED]", player)
-        end
-
-        -- continue
-        ::continue::
-    end
-end)
-
-cuhFramework.callbacks.onPlayerLeave:connect(function(_, _, peer_id)
-    -- remove mute data
-    muted[peer_id] = nil
-end)
-
-------------- ?mute
-cuhFramework.commands.create("mute", {"m"}, false, function(message, peer_id, admin, auth, command, ...)
+------------- ?disqualify
+cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer_id, admin, auth, command, ...)
     -- Get variables
     local player = cuhFramework.players.getPlayerByPeerId(peer_id)
     local args = {...}
 
     -- Check
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) then
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
         return
     end
 
-    -- Make sure this player is setup
-    if not muted[peer_id] then
-        muted[peer_id] = {}
+    -- Main
+    if not args[1] then
+        return announceLibrary.status.failure("provide peer id", player)
+    end
+
+    -- Disqualify
+    local target = cuhFramework.players.getPlayerByPeerId(tonumber(args[1]))
+
+    if not target or miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
+        return announceLibrary.status.failure("invalid", player)
+    end
+
+    if playerStatesLibrary.hasState(target, "disqualify") then
+        -- remove
+        playerStatesLibrary.removeState(target, "disqualify")
+        chatAnnounce(target.properties.name.." is now a participant.")
+    else
+        -- add
+        playerStatesLibrary.setState(target, "disqualify")
+        chatAnnounce(target.properties.name.." has been eliminated.")
+    end
+end, "")
+
+-----------------
+-- [Library | Folder: p3_commands] say.lua
+-----------------
+---------------------------------------
+------------- Command - Say
+---------------------------------------
+
+------------- ?say
+cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, admin, auth, command, ...)
+    -- Get variables
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+    local args = {...}
+
+    -- Check
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
+        return
     end
 
     -- Main
-    if args[1] then
-        -- get target player
-        local targetPlayer = cuhFramework.players.getPlayerByNameWithAllowedPartialName(args[1], false)
-
-        -- check if valid
-        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(targetPlayer) or targetPlayer == player then
-            return announceLibrary.status.failure("This player doesn't exist (or you attempted to mute yourself). Did you type their name correctly?", player)
-        end
-
-        -- check if player is already muted
-        local mutedData = muted[peer_id]
-
-        if not mutedData[targetPlayer.properties.peer_id] then
-            -- mute
-            mutedData[targetPlayer.properties.peer_id] = targetPlayer
-
-            -- and announce
-            announceLibrary.status.success("You have muted "..targetPlayer.properties.name..".", player)
-            announceLibrary.status.warning(player.properties.name.." muted you.", targetPlayer)
-        else
-            -- unmute
-            mutedData[targetPlayer.properties.peer_id] = nil
-
-            -- announce
-            announceLibrary.status.success("You have unmuted "..targetPlayer.properties.name..".", player)
-            announceLibrary.status.warning(player.properties.name.." unmuted you.", targetPlayer)
-        end
-    else
-        return announceLibrary.status.failure("Please specify the player you would like to mute/unmute.\nThe name can be partial, as if you were searching for something on Google.\nExample: '?mute "..player.properties.name:sub(1, 3).."'", player)
+    if not args[1] then
+        return announceLibrary.status.failure("provide type | 1 = cuh says, 0 = no cuh says, just say", player)
     end
-end, "Mute/unmute a player.")
+
+    if args[1] == "1" then
+        -- cuh says
+        table.remove(args, 1)
+        announceLibrary.popupAnnounce("[Cuh Says]\n"..table.concat(args, " "), 6)
+    else
+        -- cuh no say
+        table.remove(args, 1)
+        announceLibrary.popupAnnounce(table.concat(args, " "), 6)
+    end
+
+    -- Effects
+    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition((player:get_position()), 0, -10, 0))
+    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
+        if vehicle_id == vehicle.properties.vehicle_id then
+            -- disconnect, no need to listen for vehicle loading anymore
+            self:disconnect()
+
+            -- start effects
+            vehicle:press_button("start")
+
+            -- despawn
+            cuhFramework.utilities.delay.create(3, function()
+                vehicle:despawn()
+            end)
+        end
+    end)
+end, "")
 
 -----------------
 -- [Main File] main.lua
@@ -5068,26 +4997,25 @@ getRandomPlayer = function()
     return cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 end
 
----@param min number|minMax
----@param max number|nil
-minMax = function(min, max)
-    if type(min) == "number" then
-        return {
-            min = min,
-            max = max
-        }
-    elseif type(min) == "table" then
-        if min.min > min.max then
-            df.print("min over max", nil, "minMax")
-            return 0
-        end
+----------------------------------------------------------------
+-- Loops
+----------------------------------------------------------------
+------------- Teleport disqualified players away
+cuhFramework.utilities.loop.create(0.01, function()
+    local states = playerStatesLibrary.getAll()
+    local disqualified = states["disqualify"]
 
-        return math.random(min.min, min.max)
-    else
-        df.print("invalid min", nil, "minMax")
-        return 0
+    if not disqualified then
+        return
     end
-end
+
+    local toTeleport = globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+    toTeleport = cuhFramework.utilities.matrix.offsetPosition(toTeleport, 0, 15, 15)
+
+    for i, v in pairs(disqualified) do
+        v:teleport()
+    end
+end)
 
 ----------------------------------------------------------------
 -- Setup
@@ -5096,7 +5024,10 @@ end
 debugLibrary.initialize()
 easyPopupsLibrary.initialize()
 eventsLibrary.initialize()
-messageLibrary.initialize()
 
 ------------- Storages
 globalStorage = storageLibrary.new("Global Storage")
+
+------------- Other
+-- Set Spawn
+globalStorage:add("spawn_point", matrix.translation(0, 5, 0))
