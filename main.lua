@@ -37,27 +37,6 @@ getRandomPlayer = function()
     return cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 end
 
----@param min number|minMax
----@param max number|nil
-minMax = function(min, max)
-    if type(min) == "number" then
-        return {
-            min = min,
-            max = max
-        }
-    elseif type(min) == "table" then
-        if min.min > min.max then
-            df.print("min over max", nil, "minMax")
-            return 0
-        end
-
-        return math.random(min.min, min.max)
-    else
-        df.print("invalid min", nil, "minMax")
-        return 0
-    end
-end
-
 ----------------------------------------------------------------
 -- Setup
 ----------------------------------------------------------------
@@ -65,7 +44,10 @@ end
 debugLibrary.initialize()
 easyPopupsLibrary.initialize()
 eventsLibrary.initialize()
-messageLibrary.initialize()
 
 ------------- Storages
 globalStorage = storageLibrary.new("Global Storage")
+
+------------- Other
+-- Set Spawn
+globalStorage:add("spawn_point", matrix.translation(0, 5, 0))
