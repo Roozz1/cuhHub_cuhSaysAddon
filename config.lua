@@ -3,7 +3,7 @@
 ---------------------------------------
 
 config = {
-    isDedicatedServer = false,
+    isDedicatedServer = true,
     debugEnabled = true,
     debugShouldLog = true,
 
