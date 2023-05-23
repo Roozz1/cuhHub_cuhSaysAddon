@@ -32,8 +32,13 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition((player:get_position()), 0, -10, 0))
     self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
         if vehicle_id == vehicle.properties.vehicle_id then
+            -- disconnect, no need to listen for vehicle loading anymore
             self:disconnect()
+
+            -- start effects
             vehicle:press_button("start")
+
+            -- despawn
             cuhFramework.utilities.delay.create(3, function()
                 vehicle:despawn()
             end)
