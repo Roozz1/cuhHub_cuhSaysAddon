@@ -6,7 +6,7 @@
 ---------------------------------------
 
 config = {
-    isDedicatedServer = false,
+    isDedicatedServer = true,
     debugEnabled = true,
     debugShouldLog = true,
 
@@ -4902,6 +4902,28 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
         playerStatesLibrary.setState(target, "disqualify")
         chatAnnounce(target.properties.name.." has been eliminated.")
     end
+end, "")
+
+-----------------
+-- [Library | Folder: p3_commands] pos.lua
+-----------------
+---------------------------------------
+------------- Command - Pos
+---------------------------------------
+
+------------- ?pos
+cuhFramework.commands.create("pos", {"p"}, false, function(message, peer_id, admin, auth, command, ...)
+    -- Get variables
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+    local args = {...}
+
+    -- Check
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
+        return
+    end
+
+    -- Show pos
+    chatAnnounce(miscellaneousLibrary.matrixFormatted((player:get_position())))
 end, "")
 
 -----------------
