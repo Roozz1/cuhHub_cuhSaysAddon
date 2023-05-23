@@ -38,6 +38,26 @@ getRandomPlayer = function()
 end
 
 ----------------------------------------------------------------
+-- Loops
+----------------------------------------------------------------
+------------- Teleport disqualified players away
+cuhFramework.utilities.loop.create(0.01, function()
+    local states = playerStatesLibrary.getAll()
+    local disqualified = states["disqualify"]
+
+    if not disqualified then
+        return
+    end
+
+    local toTeleport = globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+    toTeleport = cuhFramework.utilities.matrix.offsetPosition(toTeleport, 0, 15, 15)
+
+    for i, v in pairs(disqualified) do
+        v:teleport()
+    end
+end)
+
+----------------------------------------------------------------
 -- Setup
 ----------------------------------------------------------------
 ------------- Inits
