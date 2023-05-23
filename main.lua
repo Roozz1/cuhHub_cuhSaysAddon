@@ -14,6 +14,7 @@
 
     UI IDs:
         peer_id + 15000 = Play Area Map Object
+        peer_id + 16000 = Status
 ]]
 --------------
 
