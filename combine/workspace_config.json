@@ -1,0 +1,14 @@
+{
+     "folders": [
+          "p0_cuhFramework",
+          "p1_libraries",
+          "p2_callbackHandlers",
+          "p3_commands"
+     ],
+     "files": [
+          "config.lua",
+          "intellisense.lua"
+     ],
+     "main": "main.lua",
+     "dump": "script.lua"
+}
