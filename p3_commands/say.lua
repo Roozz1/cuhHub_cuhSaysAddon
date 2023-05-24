@@ -8,16 +8,16 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local player = cuhFramework.players.getPlayerByPeerId(peer_id)
     local args = {...}
 
-    -- Check
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
+    -- Checks
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why code isnt too clean
         return
     end
 
-    -- Main
     if not args[1] then
         return announceLibrary.status.failure("provide type | 1 = cuh says, 0 = no cuh says, just say", player)
     end
 
+    -- Main
     if args[1] == "1" then
         -- cuh says
         table.remove(args, 1)
