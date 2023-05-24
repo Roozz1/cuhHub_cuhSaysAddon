@@ -16,7 +16,7 @@ cuhFramework.callbacks.onToggleMap:connect(function(peer_id, opened)
     end
 
     -- Show play area
-    local spawnPoint = globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+    local spawnPoint = getSpawnPoint()
     local color = colorLibrary.RGB.new(0, 125, 255, 255)
 
     server.removeMapObject(peer_id, peer_id + 15000)

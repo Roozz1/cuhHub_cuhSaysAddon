@@ -16,5 +16,5 @@ cuhFramework.callbacks.onObjectLoad:connect(function(object_id)
     end
 
     -- Teleport
-    player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0))
+    player:teleport(getSpawnPoint())
 end)

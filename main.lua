@@ -42,6 +42,10 @@ getRandomPlayer = function()
     return cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 end
 
+getSpawnPoint = function()
+    return globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+end
+
 ----------------------------------------------------------------
 -- Setup
 ----------------------------------------------------------------
@@ -62,6 +66,7 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 ----------------------------------------------------------------
 ------------- Teleport disqualified players away
 cuhFramework.utilities.loop.create(0.01, function()
+    -- grab disqualified state
     local states = playerStatesLibrary.getAll()
     local disqualified = states["disqualify"]
 
@@ -69,9 +74,10 @@ cuhFramework.utilities.loop.create(0.01, function()
         return
     end
 
-    local toTeleport = globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
-    toTeleport = cuhFramework.utilities.matrix.offsetPosition(toTeleport, 0, 15, 15)
+    -- get spawn point
+    local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
 
+    -- for everyone who is disqualified, teleport em above the spawn point
     for i, v in pairs(disqualified) do
         v:teleport(toTeleport)
     end
@@ -80,9 +86,24 @@ end)
 ----------------------------------------------------------------
 -- Zones
 ----------------------------------------------------------------
-cuhFramework.customZones.createPlayerZone(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0), config.game.playAreaSize, function(player, entered) ---@param player player
-    if not entered and not player.properties.admin and not debounceLibrary.debounce("left_spawn_point_"..player.properties.peer_id, 0.5) then
-        player:teleport(globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)) -- so much repetition but oh well
-        chatAnnounce("You cannot leave the play area.", player)
+------------- Game Area Zone
+cuhFramework.customZones.createPlayerZone(getSpawnPoint(), config.game.playAreaSize, function(player, entered) ---@param player player
+    -- no need to do anything if the player entered the zone
+    if entered then
+        return
     end
+
+    -- admin, so ignore
+    if player.properties.admin then
+        return
+    end
+
+    -- prevent restricting twice in a second somehow
+    if debounceLibrary.debounce("left_spawn_point_"..player.properties.peer_id, 0.5) then
+        return
+    end
+
+    -- and teleport
+    player:teleport(getSpawnPoint())
+    chatAnnounce("You cannot leave the play area.", player)
 end)
