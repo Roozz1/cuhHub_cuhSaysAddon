@@ -2,6 +2,8 @@
 ------------- Player Leave
 ---------------------------------------
 
+local playerLeave = eventsLibrary.new("playerLeave")
+
 cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, admin, auth)
     -- Get variables
     local player = cuhFramework.players.getPlayerByPeerId(peer_id)
@@ -26,4 +28,7 @@ cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, a
     cuhFramework.utilities.delay.create(0.01, function() -- give time for other playerleave callbacks using plaayerstates to do stuff
         playerStatesLibrary.clearStates(player)
     end)
+
+    -- Fire events
+    playerLeave:fire(player)
 end)
