@@ -24,9 +24,10 @@ cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, a
         end
     end
 
-    -- Clear States
+    -- Clear states and tags
     cuhFramework.utilities.delay.create(0.01, function() -- give time for other playerleave callbacks using plaayerstates to do stuff
         playerStatesLibrary.clearStates(player)
+        playerTagsLibrary.clearTags(player)
     end)
 
     -- Fire events

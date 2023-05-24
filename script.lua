@@ -4770,6 +4770,77 @@ storageLibrary = {
 }
 
 -----------------
+-- [Library | Folder: p1_libraries] tags.lua
+-----------------
+---------------------------------------
+------------- Player Tags
+---------------------------------------
+
+------------- Variables
+---@type table<integer, table>
+local tags = {}
+
+------------- Library
+playerTagsLibrary = {
+    ---@param player player
+    setTag = function(player, index, value)
+        -- get stuffs
+        local peer_id = player.properties.peer_id
+        local data = tags[peer_id]
+
+        -- make sure exists
+        if not data then
+            tags[peer_id] = {}
+            data = tags[peer_id]
+        end
+
+        -- give tag
+        data[index] = value
+    end,
+
+    ---@param player player
+    removeTag = function(player, index)
+        -- get stuffs
+        local peer_id = player.properties.peer_id
+        local data = tags[peer_id]
+
+        -- make sure exists
+        if not data then
+            tags[peer_id] = {}
+            data = tags[peer_id]
+        end
+
+        -- give tag
+        data[index] = nil
+    end,
+
+    ---@param player player
+    getTag = function(player, index)
+        -- get stuffs
+        local peer_id = player.properties.peer_id
+        local data = tags[peer_id]
+
+        -- make sure exists
+        if not data then
+            tags[peer_id] = {}
+            data = tags[peer_id]
+        end
+
+        -- return thy tag
+        return data[index]
+    end,
+
+    ---@param player player
+    clearTags = function(player)
+        -- get stuffs
+        local peer_id = player.properties.peer_id
+
+        -- clear
+        tags[peer_id] = {}
+    end,
+}
+
+-----------------
 -- [Library | Folder: p2_callbackHandlers] character_load.lua
 -----------------
 ---------------------------------------
@@ -4851,9 +4922,10 @@ cuhFramework.callbacks.onPlayerLeave:connect(function(steam_id, name, peer_id, a
         end
     end
 
-    -- Clear States
+    -- Clear states and tags
     cuhFramework.utilities.delay.create(0.01, function() -- give time for other playerleave callbacks using plaayerstates to do stuff
         playerStatesLibrary.clearStates(player)
+        playerTagsLibrary.clearTags(player)
     end)
 
     -- Fire events
@@ -5013,6 +5085,7 @@ end, "")
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
+        peer_id + 18000 = Spectating UI
 ]]
 --------------
 
@@ -5034,9 +5107,16 @@ notificationAnnounce = function(message, player)
     cuhFramework.ui.notifications.custom(miscellaneousLibrary.surround(config.info.addon_name, "[]"), message, player, 7)
 end
 
+---@param exception player
 ---@return player
-getRandomPlayer = function()
-    return cuhFramework.utilities.table.getRandomValue(players_unfiltered)
+getRandomPlayer = function(exception)
+    local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
+
+    if retrieved == exception and exception then
+        return getRandomPlayer(exception)
+    end
+
+    return retrieved
 end
 
 getSpawnPoint = function()
@@ -5061,7 +5141,7 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 ----------------------------------------------------------------
 -- Loops
 ----------------------------------------------------------------
-------------- Teleport disqualified players away
+------------- Teleport disqualified to whoever they are spectating
 cuhFramework.utilities.loop.create(0.01, function()
     -- grab disqualified state
     local states = playerStatesLibrary.getAll()
@@ -5071,12 +5151,23 @@ cuhFramework.utilities.loop.create(0.01, function()
         return
     end
 
-    -- get spawn point
-    local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
+    -- for everyone who is disqualified, teleport em above whoever they are spectating
+    for _, player in pairs(disqualified) do
+        -- get player to spectate
+        local target = playerTagsLibrary.getTag(player, "spectate")
 
-    -- for everyone who is disqualified, teleport em above the spawn point
-    for i, v in pairs(disqualified) do
-        v:teleport(toTeleport)
+        -- quick check
+        if not target then
+            df.print("no target tag despite player being disqualified!", nil, "(disqualify spectate loop)")
+            goto continue
+        end
+
+        -- and teleport above em
+        local toTeleport = cuhFramework.utilities.matrix.offsetPosition((target:get_position()), 0, 15, 15)
+        player:teleport(toTeleport)
+
+        -- thy continue replacement
+        ::continue::
     end
 end)
 
@@ -5117,10 +5208,16 @@ disqualify:connect(function(player)
         -- already disqualified, so give back participant status
         playerStatesLibrary.removeState(player, "disqualify")
         chatAnnounce(player.properties.name.." is now a participant.")
+
+        -- remove tag
+        playerTagsLibrary.removeTag(player, "spectate")
     else
         -- not disqualified, so disqualify
         playerStatesLibrary.setState(player, "disqualify")
         chatAnnounce(player.properties.name.." has been eliminated.")
+
+        -- and give random player to spectate
+        playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
     end
 end)
 
@@ -5129,11 +5226,13 @@ local cuhSays = eventsLibrary.new("cuhSays")
 
 ---@param type "actual"|"fake"
 cuhSays:connect(function(type, message)
+    -- thingy
     local function announce(msg)
         announceLibrary.popupAnnounce(msg, 6)
         chatAnnounce(msg, 6)
     end
 
+    -- the main stuffs
     if type == "actual" then
         announce("[Cuh Says]\n"..message)
     elseif type =="fake" then
@@ -5198,7 +5297,7 @@ eventsLibrary.get("playerJoin"):connect(function(player)
         end
 
         -- Edit thy nametag UI
-        nametag:edit(to_show)
+        nametag:edit(player.properties.name.."\n"..to_show)
     end)
 end)
 
