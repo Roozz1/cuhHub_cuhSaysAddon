@@ -109,6 +109,44 @@ cuhFramework.customZones.createPlayerZone(getSpawnPoint(), config.game.playAreaS
 end)
 
 ----------------------------------------------------------------
+-- Handlers
+----------------------------------------------------------------
+------------- Disqualify
+local disqualify = eventsLibrary.new("disqualify")
+
+---@param player player
+disqualify:connect(function(player)
+    if playerStatesLibrary.hasState(player, "disqualify") then
+        -- already disqualified, so give back participant status
+        playerStatesLibrary.removeState(player, "disqualify")
+        chatAnnounce(player.properties.name.." is now a participant.")
+    else
+        -- not disqualified, so disqualify
+        playerStatesLibrary.setState(player, "disqualify")
+        chatAnnounce(player.properties.name.." has been eliminated.")
+    end
+end)
+
+------------- cuhSays
+local cuhSays = eventsLibrary.new("cuhSays")
+
+---@param type "actual"|"fake"
+cuhSays:connect(function(type, message)
+    local function announce(msg)
+        announceLibrary.popupAnnounce(msg, 6)
+        chatAnnounce(msg, 6)
+    end
+
+    if type == "actual" then
+        announce("[Cuh Says]\n"..message)
+    elseif type =="fake" then
+        announce(message)
+    else
+        df.print("invalid cuhSays type", nil, "(cuhSays Event Handler)")
+    end
+end)
+
+----------------------------------------------------------------
 -- UI
 ----------------------------------------------------------------
 ------------- UI

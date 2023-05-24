@@ -21,11 +21,11 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     if args[1] == "1" then
         -- cuh says
         table.remove(args, 1)
-        announceLibrary.popupAnnounce("[Cuh Says]\n"..table.concat(args, " "), 6)
+        eventsLibrary.get("cuhSays"):fire("actual", table.concat(args, " "))
     else
         -- cuh no say
         table.remove(args, 1)
-        announceLibrary.popupAnnounce(table.concat(args, " "), 6)
+        eventsLibrary.get("cuhSays"):fire("fake", table.concat(args, " "))
     end
 
     -- Effects

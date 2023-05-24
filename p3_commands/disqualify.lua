@@ -25,13 +25,5 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
         return announceLibrary.status.failure("invalid", player)
     end
 
-    if playerStatesLibrary.hasState(target, "disqualify") then
-        -- remove
-        playerStatesLibrary.removeState(target, "disqualify")
-        chatAnnounce(target.properties.name.." is now a participant.")
-    else
-        -- add
-        playerStatesLibrary.setState(target, "disqualify")
-        chatAnnounce(target.properties.name.." has been eliminated.")
-    end
+    eventsLibrary.get("disqualify"):fire(target)
 end, "")
