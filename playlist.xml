@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <playlist folder_path="data/missions/cuhHub_cuhSaysAddon" file_store="4" name="[cuhHub] Cuh Says Addon">
-	<locations/>
+	<locations location_id_counter="2" component_id_counter="3">
+		<locations>
+			<l id="2" name="OCEAN" env_mod_spawn_num="1">
+				<components>
+					<c component_type="3" id="1" name="Effects" dynamic_object_type="2" character_outfit_category="11" character_type="1" vehicle_file_name="data/missions_working/vehicle_1.xml" vehicle_file_store="4" vehicle_is_static="true" vehicle_is_no_sleep="true" vehicle_is_invulnerable="true">
+						<spawn_transform 30="-48.077911" 31="1.875003" 32="-9.835656"/>
+						<spawn_bounds>
+							<min x="-2.125" y="-1.125" z="-1.875"/>
+							<max x="2.125" y="2.625" z="2.375"/>
+						</spawn_bounds>
+						<spawn_local_offset y="-0.75" z="-0.25"/>
+						<graph_links/>
+					</c>
+				</components>
+			</l>
+		</locations>
+	</locations>
 </playlist>
 
