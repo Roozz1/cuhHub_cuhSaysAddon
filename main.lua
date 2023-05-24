@@ -43,7 +43,7 @@ end
 getRandomPlayer = function(exception)
     local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 
-    if retrieved == exception and exception then
+    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 1 then
         return getRandomPlayer(exception)
     end
 
@@ -85,12 +85,21 @@ cuhFramework.utilities.loop.create(0.01, function()
     -- for everyone who is disqualified, teleport em above whoever they are spectating
     for _, player in pairs(disqualified) do
         -- get player to spectate
+        ---@type player
         local target = playerTagsLibrary.getTag(player, "spectate")
 
         -- quick check
         if not target then
             df.print("no target tag despite player being disqualified!", nil, "(disqualify spectate loop)")
             goto continue
+        end
+
+        -- make sure player is in the server and not disqualified, if not, set a new player to spectate
+        if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(player, "disqualify") then
+            playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
+            target = playerTagsLibrary.getTag(player, "spectate")
+
+            goto continue -- ERR: may cause inf recursion if all players are disqualified or something, i dont know
         end
 
         -- and teleport above em
@@ -142,13 +151,28 @@ disqualify:connect(function(player)
 
         -- remove tag
         playerTagsLibrary.removeTag(player, "spectate")
+
+        -- hide ui
+        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
+        if ui then
+            ui:edit("Spectating \""..player.properties.name.."\"...")
+            ui:setVisibility(false)
+        end
     else
         -- not disqualified, so disqualify
         playerStatesLibrary.setState(player, "disqualify")
         chatAnnounce(player.properties.name.." has been eliminated.")
 
         -- and give random player to spectate
-        playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
+        local toSpectate = getRandomPlayer(player)
+        playerTagsLibrary.setTag(player, "spectate", toSpectate)
+
+        -- show ui
+        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
+        if ui then
+            ui:edit("Spectating \""..player.properties.name.."\"...")
+            ui:setVisibility(true)
+        end
     end
 end)
 
@@ -179,6 +203,10 @@ end)
 ------------- UI
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
+    -- Spectating UI
+    local spectateUI = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Spectating _", 0, 0.8, player)
+    spectateUI:setVisibility(false)
+
     -- Participant Status
     local status = cuhFramework.ui.screen.create(player.properties.peer_id + 15000, "Participant", 0, -0.6, player)
 
