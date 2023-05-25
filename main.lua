@@ -61,6 +61,8 @@ end
 for i = 1, 10000 do
     server.removePopup(-1, i)
     server.removeMapID(-1, i)
+    server.despawnVehicle(i, true)
+    server.despawnObject(i, true)
 end
 
 ------------- Inits
@@ -226,18 +228,17 @@ end)
 ------------- cuhSays
 local cuhSays = eventsLibrary.new("cuhSays")
 
----@param type "actual"|"fake"
-cuhSays:connect(function(type, message, effectsPos)
-    -- thingy
-    local function announce(msg)
-        announceLibrary.popupAnnounce(msg, 6)
-        chatAnnounce(msg, 6)
-    end
+local function announce(msg)
+    announceLibrary.popupAnnounce(msg, 6)
+    chatAnnounce(msg, 6)
+end
 
+---@param cuhType "actual"|"fake"
+cuhSays:connect(function(cuhType, message, effectsPos)
     -- the main stuffs
-    if type == "actual" then
+    if cuhType == "actual" then
         announce("[Cuh Says]\n"..message)
-    elseif type =="fake" then
+    elseif cuhType == "fake" then
         announce(message)
     else
         df.print("invalid cuhSays type", nil, "(cuhSays Event Handler)")
@@ -245,6 +246,9 @@ cuhSays:connect(function(type, message, effectsPos)
 
     -- effects
     local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
+    chatAnnounce(tostring(vehicle))
+
+    local self
     self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
         if vehicle_id == vehicle.properties.vehicle_id then
             -- disconnect, no need to listen for vehicle loading anymore
@@ -280,7 +284,10 @@ cuhFramework.utilities.loop.create(0.01, function()
         end
 
         -- tp to player
-        object:teleport((player:get_position()))
+        local position = player:get_position()
+        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
+
+        object:teleport(position)
     end
 
     -- continue replacement
