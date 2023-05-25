@@ -18,13 +18,8 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     end
 
     -- Main
-    if args[1] == "1" then
-        -- cuh says
-        table.remove(args, 1)
-        eventsLibrary.get("cuhSays"):fire("actual", table.concat(args, " "), (player:get_position()))
-    else
-        -- cuh no say
-        table.remove(args, 1)
-        eventsLibrary.get("cuhSays"):fire("fake", table.concat(args, " "), (player:get_position()))
-    end
+    local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
+
+    table.remove(args, 1)
+    eventsLibrary.get("cuhSays"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")

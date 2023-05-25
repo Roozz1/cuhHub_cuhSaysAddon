@@ -3,6 +3,10 @@
 ---------------------------------------
 
 ------------- Library
+local announceID = 0
+local announce_ui = cuhFramework.ui.screen.create(2500, "", 0, 0)
+announce_ui:setVisibility(false)
+
 announceLibrary = {
 	status = {
         success = function(msg, player)
@@ -27,13 +31,21 @@ announceLibrary = {
 	end,
 
     popupAnnounce = function(text, timer)
-        if announcementRemovalDelay then
-            announcementRemovalDelay:remove()
-        end
+        -- id stuff
+        announceID = announceID + 1
 
-        local announce_ui = cuhFramework.ui.screen.create(2500, text, 0, 0)
-        announcementRemovalDelay = cuhFramework.utilities.delay.create(timer or 10, function()
-            announce_ui:remove()
+        -- main
+        announce_ui:edit(text)
+        announce_ui:setVisibility(true)
+
+        -- remove after some time
+        local old = announceID
+        cuhFramework.utilities.delay.create(timer or 10, function()
+            if announceID ~= old then
+                return
+            end
+
+            announce_ui:setVisibility(false)
         end)
     end
 }
