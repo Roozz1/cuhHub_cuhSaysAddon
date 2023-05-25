@@ -5112,7 +5112,7 @@ end
 getRandomPlayer = function(exception)
     local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 
-    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 0 then
+    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 1 then
         return getRandomPlayer(exception)
     end
 
@@ -5154,7 +5154,7 @@ local function spectate(player)
     local target = playerTagsLibrary.getTag(player, "spectate")
 
     -- check if player has target, if not, return false
-    if not target or (target == player and miscellaneousLibrary.getPlayerCount() > 1) then
+    if not target or miscellaneousLibrary.getPlayerCount() <= 1 then
         df.print("no spectate tag despite player being disqualified!", nil, "(spectate)")
         return false
     end
