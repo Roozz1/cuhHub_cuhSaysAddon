@@ -78,6 +78,18 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 ----------------------------------------------------------------
 -- Loops
 ----------------------------------------------------------------
+------------- Meteors in the distance
+local meteorPositions = {
+    matrix.translation(-9828.7, -0.8, -6582.5),
+    matrix.translation(-9852.5, 11.5, -7414.6),
+    matrix.translation(-10470.8, 12.9, -7333.8)
+}
+
+cuhFramework.utilities.loop.create(20, function()
+    local position = cuhFramework.utilities.table.getRandomValue(meteorPositions)
+    server.spawnMeteor(position, 1, false)
+end)
+
 ------------- Teleport disqualified to whoever they are spectating
 ---@param player player
 ---@return boolean, player|nil
@@ -129,13 +141,13 @@ cuhFramework.utilities.loop.create(0.01, function()
             position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 10, 0)
 
             -- and show ui
-            ui:edit("Spectating \""..target.properties.name.."\"...")
+            ui:edit("Spectating\n\""..target.properties.name.."\"...")
             ui:setVisibility(true)
 
             goto continue
         else
             -- showww ui again
-            ui:edit("Spectating no one...")
+            ui:edit("Spectating\nNo one.")
             ui:setVisibility(true)
 
             -- teleport above spawn
@@ -215,7 +227,7 @@ end)
 local cuhSays = eventsLibrary.new("cuhSays")
 
 ---@param type "actual"|"fake"
-cuhSays:connect(function(type, message)
+cuhSays:connect(function(type, message, effectsPos)
     -- thingy
     local function announce(msg)
         announceLibrary.popupAnnounce(msg, 6)
@@ -230,6 +242,23 @@ cuhSays:connect(function(type, message)
     else
         df.print("invalid cuhSays type", nil, "(cuhSays Event Handler)")
     end
+
+    -- effects
+    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
+    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
+        if vehicle_id == vehicle.properties.vehicle_id then
+            -- disconnect, no need to listen for vehicle loading anymore
+            self:disconnect()
+
+            -- start effects
+            vehicle:press_button("activate")
+
+            -- despawn
+            cuhFramework.utilities.delay.create(3, function()
+                vehicle:despawn()
+            end)
+        end
+    end)
 end)
 
 ----------------------------------------------------------------
