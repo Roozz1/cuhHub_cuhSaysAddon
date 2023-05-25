@@ -87,7 +87,7 @@ local meteorPositions = {
 
 cuhFramework.utilities.loop.create(20, function()
     local position = cuhFramework.utilities.table.getRandomValue(meteorPositions)
-    server.spawnMeteor(position, 1, false)
+    server.spawnMeteor(position, 0.4, false)
 end)
 
 ------------- Teleport disqualified to whoever they are spectating
@@ -259,6 +259,60 @@ cuhSays:connect(function(type, message, effectsPos)
             end)
         end
     end)
+end)
+
+------------- Mark Enforcers
+cuhFramework.utilities.loop.create(0.01, function()
+    -- attack enforcer objects to enforcers
+    for _, player in pairs(cuhFramework.players.connectedPlayers) do
+        -- quick check
+        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
+            goto continue
+        end
+
+        -- get object
+        ---@type object
+        local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+        -- make sure it exists
+        if not object then
+            goto continue
+        end
+
+        -- tp to player
+        object:teleport((player:get_position()))
+    end
+
+    -- continue replacement
+    ::continue::
+end)
+
+---@param player player
+eventsLibrary.get("playerJoin"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- spawn object and attach to player
+    local object = cuhFramework.objects.spawnObject((player:get_position()), 71) -- glowstick
+    playerTagsLibrary.setTag(player, "enforcer_object", object) -- constantly teleported to player by loop above
+end)
+
+---@param player player
+eventsLibrary.get("playerLeave"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- despawn object
+    ---@type object|nil
+    local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+    if object then
+        object:despawn()
+    end
 end)
 
 ----------------------------------------------------------------
