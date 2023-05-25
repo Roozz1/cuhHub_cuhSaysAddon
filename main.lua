@@ -230,7 +230,7 @@ local cuhSays = eventsLibrary.new("cuhSays")
 
 local function announce(msg)
     announceLibrary.popupAnnounce(msg, 6)
-    chatAnnounce(msg, 6)
+    chatAnnounce(msg)
 end
 
 ---@param cuhType "actual"|"fake"
@@ -246,7 +246,6 @@ cuhSays:connect(function(cuhType, message, effectsPos)
 
     -- effects
     local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
-    chatAnnounce(tostring(vehicle))
 
     local self
     self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)

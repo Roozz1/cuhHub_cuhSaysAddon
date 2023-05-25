@@ -3664,6 +3664,10 @@ cuhFramework.references.httpGet = server.httpGet
 ---------------------------------------
 
 ------------- Library
+local announceID = 0
+local announce_ui = cuhFramework.ui.screen.create(2500, "", 0, 0)
+announce_ui:setVisibility(false)
+
 announceLibrary = {
 	status = {
         success = function(msg, player)
@@ -3688,13 +3692,21 @@ announceLibrary = {
 	end,
 
     popupAnnounce = function(text, timer)
-        if announcementRemovalDelay then
-            announcementRemovalDelay:remove()
-        end
+        -- id stuff
+        announceID = announceID + 1
 
-        local announce_ui = cuhFramework.ui.screen.create(2500, text, 0, 0)
-        announcementRemovalDelay = cuhFramework.utilities.delay.create(timer or 10, function()
-            announce_ui:remove()
+        -- main
+        announce_ui:edit(text)
+        announce_ui:setVisibility(true)
+
+        -- remove after some time
+        local old = announceID
+        cuhFramework.utilities.delay.create(timer or 10, function()
+            if announceID ~= old then
+                return
+            end
+
+            announce_ui:setVisibility(false)
         end)
     end
 }
@@ -5036,32 +5048,10 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     end
 
     -- Main
-    if args[1] == "1" then
-        -- cuh says
-        table.remove(args, 1)
-        eventsLibrary.get("cuhSays"):fire("actual", table.concat(args, " "))
-    else
-        -- cuh no say
-        table.remove(args, 1)
-        eventsLibrary.get("cuhSays"):fire("fake", table.concat(args, " "))
-    end
+    local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
 
-    -- Effects
-    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition((player:get_position()), 0, -10, 0))
-    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
-        if vehicle_id == vehicle.properties.vehicle_id then
-            -- disconnect, no need to listen for vehicle loading anymore
-            self:disconnect()
-
-            -- start effects
-            vehicle:press_button("activate")
-
-            -- despawn
-            cuhFramework.utilities.delay.create(3, function()
-                vehicle:despawn()
-            end)
-        end
-    end)
+    table.remove(args, 1)
+    eventsLibrary.get("cuhSays"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")
 
 -----------------
@@ -5130,6 +5120,8 @@ end
 for i = 1, 10000 do
     server.removePopup(-1, i)
     server.removeMapID(-1, i)
+    server.despawnVehicle(i, true)
+    server.despawnObject(i, true)
 end
 
 ------------- Inits
@@ -5147,6 +5139,18 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 ----------------------------------------------------------------
 -- Loops
 ----------------------------------------------------------------
+------------- Meteors in the distance
+local meteorPositions = {
+    matrix.translation(-9828.7, -0.8, -6582.5),
+    matrix.translation(-9852.5, 11.5, -7414.6),
+    matrix.translation(-10470.8, 12.9, -7333.8)
+}
+
+cuhFramework.utilities.loop.create(20, function()
+    local position = cuhFramework.utilities.table.getRandomValue(meteorPositions)
+    server.spawnMeteor(position, 0.4, false)
+end)
+
 ------------- Teleport disqualified to whoever they are spectating
 ---@param player player
 ---@return boolean, player|nil
@@ -5198,13 +5202,13 @@ cuhFramework.utilities.loop.create(0.01, function()
             position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 10, 0)
 
             -- and show ui
-            ui:edit("Spectating \""..target.properties.name.."\"...")
+            ui:edit("Spectating\n\""..target.properties.name.."\"...")
             ui:setVisibility(true)
 
             goto continue
         else
             -- showww ui again
-            ui:edit("Spectating no one...")
+            ui:edit("Spectating\nNo one.")
             ui:setVisibility(true)
 
             -- teleport above spawn
@@ -5283,21 +5287,96 @@ end)
 ------------- cuhSays
 local cuhSays = eventsLibrary.new("cuhSays")
 
----@param type "actual"|"fake"
-cuhSays:connect(function(type, message)
-    -- thingy
-    local function announce(msg)
-        announceLibrary.popupAnnounce(msg, 6)
-        chatAnnounce(msg, 6)
-    end
+local function announce(msg)
+    announceLibrary.popupAnnounce(msg, 6)
+    chatAnnounce(msg)
+end
 
+---@param cuhType "actual"|"fake"
+cuhSays:connect(function(cuhType, message, effectsPos)
     -- the main stuffs
-    if type == "actual" then
+    if cuhType == "actual" then
         announce("[Cuh Says]\n"..message)
-    elseif type =="fake" then
+    elseif cuhType == "fake" then
         announce(message)
     else
         df.print("invalid cuhSays type", nil, "(cuhSays Event Handler)")
+    end
+
+    -- effects
+    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
+
+    local self
+    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
+        if vehicle_id == vehicle.properties.vehicle_id then
+            -- disconnect, no need to listen for vehicle loading anymore
+            self:disconnect()
+
+            -- start effects
+            vehicle:press_button("activate")
+
+            -- despawn
+            cuhFramework.utilities.delay.create(3, function()
+                vehicle:despawn()
+            end)
+        end
+    end)
+end)
+
+------------- Mark Enforcers
+cuhFramework.utilities.loop.create(0.01, function()
+    -- attack enforcer objects to enforcers
+    for _, player in pairs(cuhFramework.players.connectedPlayers) do
+        -- quick check
+        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
+            goto continue
+        end
+
+        -- get object
+        ---@type object
+        local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+        -- make sure it exists
+        if not object then
+            goto continue
+        end
+
+        -- tp to player
+        local position = player:get_position()
+        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
+
+        object:teleport(position)
+    end
+
+    -- continue replacement
+    ::continue::
+end)
+
+---@param player player
+eventsLibrary.get("playerJoin"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- spawn object and attach to player
+    local object = cuhFramework.objects.spawnObject((player:get_position()), 71) -- glowstick
+    playerTagsLibrary.setTag(player, "enforcer_object", object) -- constantly teleported to player by loop above
+end)
+
+---@param player player
+eventsLibrary.get("playerLeave"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- despawn object
+    ---@type object|nil
+    local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+    if object then
+        object:despawn()
     end
 end)
 
