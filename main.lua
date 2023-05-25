@@ -233,7 +233,7 @@ local function announce(msg)
     chatAnnounce(msg)
 end
 
----@param cuhType "actual"|"fake"
+---@param sayType "actual"|"fake"
 say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
     if sayType == "actual" then
