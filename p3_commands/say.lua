@@ -21,5 +21,5 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
 
     table.remove(args, 1)
-    eventsLibrary.get("cuhSays"):fire(saysType, table.concat(args, " "), (player:get_position()))
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")

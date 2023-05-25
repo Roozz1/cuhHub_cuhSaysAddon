@@ -5051,7 +5051,7 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
 
     table.remove(args, 1)
-    eventsLibrary.get("cuhSays"):fire(saysType, table.concat(args, " "), (player:get_position()))
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")
 
 -----------------
@@ -5284,8 +5284,8 @@ disqualify:connect(function(player)
     end
 end)
 
-------------- cuhSays
-local cuhSays = eventsLibrary.new("cuhSays")
+------------- Say
+local say = eventsLibrary.new("say")
 
 local function announce(msg)
     announceLibrary.popupAnnounce(msg, 6)
@@ -5293,14 +5293,14 @@ local function announce(msg)
 end
 
 ---@param cuhType "actual"|"fake"
-cuhSays:connect(function(cuhType, message, effectsPos)
+say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
-    if cuhType == "actual" then
+    if sayType == "actual" then
         announce("[Cuh Says]\n"..message)
-    elseif cuhType == "fake" then
+    elseif sayType == "fake" then
         announce(message)
     else
-        df.print("invalid cuhSays type", nil, "(cuhSays Event Handler)")
+        df.print("invalid cuhSays type", nil, "(say Event Handler)")
     end
 
     -- effects
@@ -5378,6 +5378,12 @@ eventsLibrary.get("playerLeave"):connect(function(player)
     if object then
         object:despawn()
     end
+end)
+
+------------- Join Message
+---@param player player
+eventsLibrary.get("playerJoin"):connect(function(player)
+    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
 end)
 
 ----------------------------------------------------------------
