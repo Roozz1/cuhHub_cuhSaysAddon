@@ -5112,7 +5112,7 @@ end
 getRandomPlayer = function(exception)
     local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
 
-    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 1 then
+    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 0 then
         return getRandomPlayer(exception)
     end
 
@@ -5126,6 +5126,12 @@ end
 ----------------------------------------------------------------
 -- Setup
 ----------------------------------------------------------------
+------------- Reload
+for i = 1, 10000 do
+    server.removePopup(-1, i)
+    server.removeMapID(-1, i)
+end
+
 ------------- Inits
 debugLibrary.initialize()
 easyPopupsLibrary.initialize()
@@ -5148,13 +5154,13 @@ local function spectate(player)
     local target = playerTagsLibrary.getTag(player, "spectate")
 
     -- check if player has target, if not, return false
-    if not target then
+    if not target or (target == player and miscellaneousLibrary.getPlayerCount() > 1) then
         df.print("no spectate tag despite player being disqualified!", nil, "(spectate)")
         return false
     end
 
     -- check if player is in the server and isnt disqualified, if so, get new target
-    if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(target, "disqualify") then
+    if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(target, "disqualify") or target == player then
         playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
         target = playerTagsLibrary.getTag(player, "spectate")
     end
@@ -5355,6 +5361,7 @@ eventsLibrary.get("playerJoin"):connect(function(player)
 
         -- Edit thy nametag UI
         nametag:edit(player.properties.name.."\n"..to_show)
+        server.removePopup(player.properties.peer_id, nametag.properties.id)
     end)
 end)
 
