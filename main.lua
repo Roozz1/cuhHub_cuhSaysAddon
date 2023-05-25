@@ -73,6 +73,26 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 -- Loops
 ----------------------------------------------------------------
 ------------- Teleport disqualified to whoever they are spectating
+---@param player player
+---@return boolean, player|nil
+local function spectate(player)
+    local target = playerTagsLibrary.getTag(player, "spectate")
+
+    -- check if player has target, if not, return false
+    if not target then
+        df.print("no spectate tag despite player being disqualified!", nil, "(spectate)")
+        return false
+    end
+
+    -- check if player is in the server and isnt disqualified, if so, get new target
+    if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(target, "disqualify") then
+        playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
+        target = playerTagsLibrary.getTag(player, "spectate")
+    end
+
+    return true, target
+end
+
 cuhFramework.utilities.loop.create(0.01, function()
     -- grab disqualified state
     local states = playerStatesLibrary.getAll()
@@ -83,23 +103,40 @@ cuhFramework.utilities.loop.create(0.01, function()
     end
 
     -- for everyone who is disqualified, teleport em above whoever they are spectating
-    for _, player in pairs(disqualified) do
+    for _, player in pairs(disqualified) do ---@param player player
         -- get player to spectate
-        ---@type player
-        local target = playerTagsLibrary.getTag(player, "spectate")
+        local canSpectate, target = spectate(player)
 
-        -- quick check
-        if not target then
-            df.print("no target tag despite player being disqualified!", nil, "(disqualify spectate loop)")
+        -- teleport above spawn if no one to spectate
+        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
+
+        -- check
+        if not ui then
+            df.print("spectate ui doesnt exist for "..player.properties.name, nil, "disqualify loop")
             goto continue
         end
 
-        -- make sure player is in the server and not disqualified, if not, set a new player to spectate
-        if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(player, "disqualify") then
-            playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
-            target = playerTagsLibrary.getTag(player, "spectate")
+        -- main
+        if canSpectate and target then
+            -- teleport above player
+            local position = target:get_position()
+            position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 10, 0)
 
-            goto continue -- ERR: may cause inf recursion if all players are disqualified or something, i dont know
+            -- and show ui
+            ui:edit("Spectating \""..target.properties.name.."\"...")
+            ui:setVisibility(true)
+
+            goto continue
+        else
+            -- showww ui again
+            ui:edit("Spectating no one...")
+            ui:setVisibility(true)
+
+            -- teleport above spawn
+            local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
+            player:teleport(toTeleport)
+
+            goto continue
         end
 
         -- and teleport above em
@@ -155,7 +192,6 @@ disqualify:connect(function(player)
         -- hide ui
         local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
         if ui then
-            ui:edit("Spectating \""..player.properties.name.."\"...")
             ui:setVisibility(false)
         end
     else
@@ -166,13 +202,6 @@ disqualify:connect(function(player)
         -- and give random player to spectate
         local toSpectate = getRandomPlayer(player)
         playerTagsLibrary.setTag(player, "spectate", toSpectate)
-
-        -- show ui
-        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
-        if ui then
-            ui:edit("Spectating \""..player.properties.name.."\"...")
-            ui:setVisibility(true)
-        end
     end
 end)
 
