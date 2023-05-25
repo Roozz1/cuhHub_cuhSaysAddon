@@ -5139,7 +5139,7 @@ globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
 ----------------------------------------------------------------
 -- Loops
 ----------------------------------------------------------------
-------------- Meteors in the distance
+------------- Random meteors
 local meteorPositions = {
     matrix.translation(-9828.7, -0.8, -6582.5),
     matrix.translation(-9852.5, 11.5, -7414.6),
@@ -5292,7 +5292,7 @@ local function announce(msg)
     chatAnnounce(msg)
 end
 
----@param cuhType "actual"|"fake"
+---@param sayType "actual"|"fake"
 say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
     if sayType == "actual" then
