@@ -15,9 +15,15 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
 
     -- Main
     if not args[1] then
-        return announceLibrary.status.failure("provide obj type", player)
+        return announceLibrary.status.failure("provide name", player)
     end
 
-    -- Spawn the object
-    cuhFramework.objects.spawnObject((player:get_position()), tonumber(args[1]) or 1)
+    -- Disqualify
+    local target = cuhFramework.players.getPlayerByNameWithAllowedPartialName(table.concat(args, " "), false)
+
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
+        return announceLibrary.status.failure("invalid", player)
+    end
+
+    eventsLibrary.get("disqualify"):fire(target)
 end, "")
