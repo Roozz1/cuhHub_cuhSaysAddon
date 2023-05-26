@@ -8,7 +8,7 @@ config = {
     debugShouldLog = true,
 
     game = {
-        playAreaSize = 30,
+        playAreaSize = 40,
         timeToFullyEliminate = 1
     },
 
