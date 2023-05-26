@@ -33,7 +33,7 @@ cuhFramework.commands.create("despawn", {"de"}, false, function(message, peer_id
         return
     end
 
-    -- Despawn all objetcs
+    -- Despawn all objects
     for i, v in pairs(spawned) do
         v:despawn()
         spawned[i] = nil
