@@ -53,6 +53,16 @@ getSpawnPoint = function()
     return globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
 end
 
+---@param pos SWMatrix
+---@param magnitude number 0-1
+spawnExplosion = function(pos, magnitude)
+    local explosion = server.spawnFire(pos, magnitude * 10, -1, true, true, 0, magnitude * 5)
+
+    cuhFramework.utilities.delay.create(2, function()
+        server.despawnObject(explosion, true)
+    end)
+end
+
 ----------------------------------------------------------------
 -- Setup
 ----------------------------------------------------------------
@@ -186,20 +196,23 @@ disqualify:connect(function(player)
             ui:setVisibility(false)
         end
     else
-        -- ascend the player stranger things style
+        -- ascend the player into a fire
         local pos = player:get_position()
         local dest = cuhFramework.utilities.matrix.offsetPosition(pos, 0, 5, 0)
+
+        local fire = server.spawnFire(dest, 1, 0.5, true, false, 0, 0)
 
         local animation = cuhFramework.animation.createLinearAnimation(pos, dest, 0.04, false, function(animation) ---@param animation animation
             player:teleport(animation.properties.current_pos)
         end)
 
-        local fire = server.spawnFire(dest, 1, 0.5, true, false, 0, 0)
-
         -- wait some time for animation to finish
         cuhFramework.utilities.delay.create(3, function()
             -- remove the fire
             server.despawnObject(fire, true)
+
+            -- explode
+            spawnExplosion(dest, 0.05)
 
             -- stop animation
             animation:remove()
