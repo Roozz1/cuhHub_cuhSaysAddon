@@ -201,6 +201,10 @@ local disqualify = eventsLibrary.new("disqualify")
 
 ---@param player player
 disqualify:connect(function(player)
+    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, 2.1) then
+        return
+    end
+
     if playerStatesLibrary.hasState(player, "disqualify") then
         -- already disqualified, so give back participant status
         playerStatesLibrary.removeState(player, "disqualify")
@@ -215,13 +219,26 @@ disqualify:connect(function(player)
             ui:setVisibility(false)
         end
     else
-        -- not disqualified, so disqualify
-        playerStatesLibrary.setState(player, "disqualify")
-        chatAnnounce(player.properties.name.." has been eliminated.")
+        -- ascend the player stranger things style
+        local pos = player:get_position()
 
-        -- and give random player to spectate
-        local toSpectate = getRandomPlayer(player)
-        playerTagsLibrary.setTag(player, "spectate", toSpectate)
+        local animation = cuhFramework.animation.createLinearAnimation(pos, cuhFramework.utilities.matrix.offsetPosition(pos, 0, 5, 0), 0.01, false, function(animation) ---@param animation animation
+            player:teleport(animation.properties.current_pos)
+        end)
+
+        -- wait some time for animation to finish
+        cuhFramework.utilities.delay.create(2, function()
+            -- stop animation
+            animation:remove()
+
+            -- not disqualified, so disqualify
+            playerStatesLibrary.setState(player, "disqualify")
+            chatAnnounce(player.properties.name.." has been eliminated.")
+
+            -- and give random player to spectate
+            local toSpectate = getRandomPlayer(player)
+            playerTagsLibrary.setTag(player, "spectate", toSpectate)
+        end)
     end
 end)
 
