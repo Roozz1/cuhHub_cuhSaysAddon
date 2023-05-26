@@ -171,7 +171,7 @@ local disqualify = eventsLibrary.new("disqualify")
 
 ---@param player player
 disqualify:connect(function(player)
-    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, 2.1) then
+    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, 3) then
         return
     end
 
@@ -188,13 +188,19 @@ disqualify:connect(function(player)
     else
         -- ascend the player stranger things style
         local pos = player:get_position()
+        local dest = cuhFramework.utilities.matrix.offsetPosition(pos, 0, 5, 0)
 
-        local animation = cuhFramework.animation.createLinearAnimation(pos, cuhFramework.utilities.matrix.offsetPosition(pos, 0, 5, 0), 0.01, false, function(animation) ---@param animation animation
+        local animation = cuhFramework.animation.createLinearAnimation(pos, dest, 0.04, false, function(animation) ---@param animation animation
             player:teleport(animation.properties.current_pos)
         end)
 
+        local fire = server.spawnFire(dest, 1, 0.5, true, false, 0, 0)
+
         -- wait some time for animation to finish
-        cuhFramework.utilities.delay.create(2, function()
+        cuhFramework.utilities.delay.create(3, function()
+            -- remove the fire
+            server.despawnObject(fire, true)
+
             -- stop animation
             animation:remove()
 
