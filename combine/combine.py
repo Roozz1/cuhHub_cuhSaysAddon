@@ -19,12 +19,12 @@ file =  "workspace_config.json"
 # Functions
 #-------------------------
 def get(key):
-    content = None
+    content = {}
 
     with open(file, "r") as f:
-        content = json.loads(f.read())
+        content: dict = json.loads(f.read())
         
-    return content[key]
+    return content.get(key, False)
 
 def combine_files(folders, main, dump, files):
     content_from_files = []
