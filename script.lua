@@ -11,7 +11,7 @@ config = {
     debugShouldLog = true,
 
     game = {
-        playAreaSize = 30,
+        playAreaSize = 40,
         timeToFullyEliminate = 1
     },
 
@@ -5000,11 +5000,62 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
 
     -- Main
     if not args[1] then
+        return announceLibrary.status.failure("provide name", player)
+    end
+
+    -- Disqualify
+    local target = cuhFramework.players.getPlayerByNameWithAllowedPartialName(table.concat(args, " "), false)
+
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
+        return announceLibrary.status.failure("invalid", player)
+    end
+
+    eventsLibrary.get("disqualify"):fire(target)
+end, "")
+
+-----------------
+-- [Library | Folder: p3_commands] objects.lua
+-----------------
+---------------------------------------
+------------- Command - Objects
+---------------------------------------
+
+---@type table<integer, object>
+local spawned = {}
+
+------------- ?spawn
+cuhFramework.commands.create("spawn", {"sp"}, false, function(message, peer_id, admin, auth, command, ...)
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+    local args = {...}
+
+    -- Check
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
+        return
+    end
+
+    -- Main
+    if not args[1] then
         return announceLibrary.status.failure("provide obj type", player)
     end
 
     -- Spawn the object
-    cuhFramework.objects.spawnObject((player:get_position()), tonumber(args[1]) or 1)
+    table.insert(spawned, cuhFramework.objects.spawnObject((player:get_position()), tonumber(args[1]) or 1))
+end, "")
+
+------------- ?despawn
+cuhFramework.commands.create("despawn", {"de"}, false, function(message, peer_id, admin, auth, command, ...)
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+
+    -- Check
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
+        return
+    end
+
+    -- Despawn all objects
+    for i, v in pairs(spawned) do
+        v:despawn()
+        spawned[i] = nil
+    end
 end, "")
 
 -----------------
@@ -5044,35 +5095,6 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
 
     -- Checks
     if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why this command isnt too user friendly
-        return
-    end
-
-    if not args[1] then
-        return announceLibrary.status.failure("provide type | 1 = cuh says, 0 = no cuh says, just say", player)
-    end
-
-    -- Main
-    local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
-
-    table.remove(args, 1)
-    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
-end, "")
-
------------------
--- [Library | Folder: p3_commands] spawn.lua
------------------
----------------------------------------
-------------- Command - Spawn
----------------------------------------
-
-------------- ?spawn
-cuhFramework.commands.create("spawn", {"sp"}, false, function(message, peer_id, admin, auth, command, ...)
-    -- Get variables
-    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
-    local args = {...}
-
-    -- Checks
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
         return
     end
 
@@ -5317,10 +5339,10 @@ cuhFramework.utilities.loop.create(0.01, function()
         position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
 
         object:teleport(position)
-    end
 
-    -- continue replacement
-    ::continue::
+        -- continue replacement
+        ::continue::
+    end
 end)
 
 ----------------------------------------------------------------
