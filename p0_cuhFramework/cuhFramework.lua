@@ -1710,7 +1710,7 @@ cuhFramework.backend.updates:insert(function()
 		if v.properties.type == "linear" then
 			for i2 = 1, 3 do
 				-- check if reached destination, fuck precision all the homies hate precision btw
-				if v.properties.current_pos[12 + i2] > v.properties.destination_pos[12 + i2] - v.properties.increment and v.properties.current_pos[12 + i2] < v.properties.destination_pos[12 + i2] + v.properties.increment then
+				if math.abs(v.properties.current_pos[12 + i2] - v.properties.destination_pos[12 + i2]) <= v.properties.increment then
 					got_to_destination_count = got_to_destination_count + 1
 					goto continue
 				end
