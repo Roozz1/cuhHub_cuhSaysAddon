@@ -15,13 +15,13 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
 
     -- Main
     if not args[1] then
-        return announceLibrary.status.failure("provide peer id", player)
+        return announceLibrary.status.failure("provide name", player)
     end
 
     -- Disqualify
-    local target = cuhFramework.players.getPlayerByPeerId(tonumber(args[1]))
+    local target = cuhFramework.players.getPlayerByNameWithAllowedPartialName(table.concat(args, " "), false)
 
-    if not target or miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
         return announceLibrary.status.failure("invalid", player)
     end
 
