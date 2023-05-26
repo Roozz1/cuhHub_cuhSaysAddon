@@ -16,7 +16,6 @@
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
-        peer_id + 18000 = Spectating UI
 ]]
 --------------
 
@@ -58,7 +57,7 @@ end
 -- Setup
 ----------------------------------------------------------------
 ------------- Reload
-for i = 1, 10000 do
+for i = 1, 25000 do
     server.removePopup(-1, i)
     server.removeMapID(-1, i)
     server.despawnVehicle(i, true)
@@ -105,7 +104,7 @@ cuhFramework.utilities.loop.create(0.01, function()
     -- for everyone who is disqualified, teleport em above whoever they are spectating
     for _, player in pairs(disqualified) do ---@param player player
         -- teleport above spawn
-        local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
+        local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, -5)
         player:teleport(toTeleport)
     end
 end)
