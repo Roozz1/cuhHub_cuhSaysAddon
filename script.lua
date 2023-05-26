@@ -81,6 +81,7 @@ config = {
 ---
 ---@field connect function<self, function>
 ---@field fire function<self, any>
+---@field clear function<self>
 ---@field remove function<self>
 
 ------------- Storage
@@ -1831,7 +1832,7 @@ cuhFramework.backend.updates:insert(function()
 		if v.properties.type == "linear" then
 			for i2 = 1, 3 do
 				-- check if reached destination, fuck precision all the homies hate precision btw
-				if v.properties.current_pos[12 + i2] > v.properties.destination_pos[12 + i2] - v.properties.increment and v.properties.current_pos[12 + i2] < v.properties.destination_pos[12 + i2] + v.properties.increment then
+				if math.abs(v.properties.current_pos[12 + i2] - v.properties.destination_pos[12 + i2]) <= v.properties.increment then
 					got_to_destination_count = got_to_destination_count + 1
 					goto continue
 				end
@@ -4179,16 +4180,24 @@ eventsLibrary = {
             name = name,
             connections = {},
 
+            ---@param self event
             connect = function(self, func)
                 table.insert(self.connections, func)
             end,
 
+            ---@param self event
             fire = function(self, ...)
                 for i, v in pairs(self.connections) do
                     v(...)
                 end
             end,
 
+            ---@param self event
+            clear = function(self)
+                self.connections = {}
+            end,
+
+            ---@param self event
             remove = function(self)
                 return eventsLibrary.remove(self.name)
             end
@@ -4990,13 +4999,13 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
 
     -- Main
     if not args[1] then
-        return announceLibrary.status.failure("provide peer id", player)
+        return announceLibrary.status.failure("provide name", player)
     end
 
     -- Disqualify
-    local target = cuhFramework.players.getPlayerByPeerId(tonumber(args[1]))
+    local target = cuhFramework.players.getPlayerByNameWithAllowedPartialName(table.concat(args, " "), false)
 
-    if not target or miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
         return announceLibrary.status.failure("invalid", player)
     end
 
@@ -5055,347 +5064,44 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
 end, "")
 
 -----------------
--- [Main File] main.lua
+-- [Library | Folder: p4_ui] map.lua
 -----------------
-------------------------------------------------------------------------
-    --cuhFramework || An addon creation framework to make SW addon development easier. 
-	-- 		Created by cuh4#7366
-	--		cuhHub - Stormworks Server Hub: https://discord.gg/zTQxaZjwDr
-	--		This framework is open-source: https://github.com/Roozz1/cuhFramework
-------------------------------------------------------------------------
-
---------------
---[[
-    cuhHub - Cuh Says
-    Created by cuh4#7366 [cuhHub Developer]
-
-    This addon uses cuhFramework, see above.
-
-    UI IDs:
-        peer_id + 15000 = Play Area Map Object
-        peer_id + 16000 = Status
-        peer_id + 17000 = Nametag
-        peer_id + 18000 = Spectating UI
-]]
---------------
-
-----------------------------------------------------------------
--- Variables
-----------------------------------------------------------------
----@type table<integer, player>
-players_unfiltered = {}
-
-----------------------------------------------------------------
--- Functions
-----------------------------------------------------------------
-------------- Uncategorised
-chatAnnounce = function(message, player)
-    cuhFramework.chat.send_message(miscellaneousLibrary.surround(config.info.addon_name, "[]"), message, player)
-end
-
-notificationAnnounce = function(message, player)
-    cuhFramework.ui.notifications.custom(miscellaneousLibrary.surround(config.info.addon_name, "[]"), message, player, 7)
-end
-
----@param exception player
----@return player
-getRandomPlayer = function(exception)
-    local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
-
-    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 1 then
-        return getRandomPlayer(exception)
-    end
-
-    return retrieved
-end
-
-getSpawnPoint = function()
-    return globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
-end
-
-----------------------------------------------------------------
--- Setup
-----------------------------------------------------------------
-------------- Reload
-for i = 1, 10000 do
-    server.removePopup(-1, i)
-    server.removeMapID(-1, i)
-    server.despawnVehicle(i, true)
-    server.despawnObject(i, true)
-end
-
-------------- Inits
-debugLibrary.initialize()
-easyPopupsLibrary.initialize()
-eventsLibrary.initialize()
-
-------------- Storages
-globalStorage = storageLibrary.new("Global Storage")
-
-------------- Other
--- Set Spawn
-globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
-
-----------------------------------------------------------------
--- Loops
-----------------------------------------------------------------
-------------- Random meteors
-local meteorPositions = {
-    matrix.translation(-9828.7, -0.8, -6582.5),
-    matrix.translation(-9852.5, 11.5, -7414.6),
-    matrix.translation(-10470.8, 12.9, -7333.8)
-}
-
-cuhFramework.utilities.loop.create(20, function()
-    local position = cuhFramework.utilities.table.getRandomValue(meteorPositions)
-    server.spawnMeteor(position, 0.4, false)
-end)
-
-------------- Teleport disqualified to whoever they are spectating
+---------------------------------------
+------------- UI - Map
+---------------------------------------
 ---@param player player
----@return boolean, player|nil
-local function spectate(player)
-    local target = playerTagsLibrary.getTag(player, "spectate")
+eventsLibrary.get("openMap"):connect(function(player)
+    -- Play Area
+    local spawnPoint = getSpawnPoint()
+    local color = colorLibrary.RGB.new(0, 125, 255, 255)
 
-    -- check if player has target, if not, return false
-    if not target or miscellaneousLibrary.getPlayerCount() <= 1 then
-        df.print("no spectate tag despite player being disqualified!", nil, "(spectate)")
-        return false
-    end
-
-    -- check if player is in the server and isnt disqualified, if so, get new target
-    if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(target, "disqualify") or target == player then
-        playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
-        target = playerTagsLibrary.getTag(player, "spectate")
-    end
-
-    return true, target
-end
-
-cuhFramework.utilities.loop.create(0.01, function()
-    -- grab disqualified state
-    local states = playerStatesLibrary.getAll()
-    local disqualified = states["disqualify"]
-
-    if not disqualified then
-        return
-    end
-
-    -- for everyone who is disqualified, teleport em above whoever they are spectating
-    for _, player in pairs(disqualified) do ---@param player player
-        -- get player to spectate
-        local canSpectate, target = spectate(player)
-
-        -- teleport above spawn if no one to spectate
-        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
-
-        -- check
-        if not ui then
-            df.print("spectate ui doesnt exist for "..player.properties.name, nil, "disqualify loop")
-            goto continue
-        end
-
-        -- main
-        if canSpectate and target then
-            -- teleport above player
-            local position = target:get_position()
-            position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 10, 0)
-
-            -- and show ui
-            ui:edit("Spectating\n\""..target.properties.name.."\"...")
-            ui:setVisibility(true)
-
-            goto continue
-        else
-            -- showww ui again
-            ui:edit("Spectating\nNo one.")
-            ui:setVisibility(true)
-
-            -- teleport above spawn
-            local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
-            player:teleport(toTeleport)
-
-            goto continue
-        end
-
-        -- and teleport above em
-        local toTeleport = cuhFramework.utilities.matrix.offsetPosition((target:get_position()), 0, 15, 15)
-        player:teleport(toTeleport)
-
-        -- thy continue replacement
-        ::continue::
-    end
+    server.removeMapObject(player.properties.peer_id, player.properties.peer_id + 15000)
+    server.addMapObject(
+        player.properties.peer_id,
+        player.properties.peer_id + 15000,
+        0,
+        9,
+        spawnPoint[13],
+        spawnPoint[15],
+        0,
+        0,
+        0,
+        0,
+        "Play Area",
+        config.game.playAreaSize,
+        "You cannot leave this area.",
+        colorLibrary.RGB.unpack(color)
+    )
 end)
 
-----------------------------------------------------------------
--- Zones
-----------------------------------------------------------------
-------------- Game Area Zone
-cuhFramework.customZones.createPlayerZone(getSpawnPoint(), config.game.playAreaSize, function(player, entered) ---@param player player
-    -- no need to do anything if the player entered the zone
-    if entered then
-        return
-    end
-
-    -- admin, so ignore
-    if player.properties.admin then
-        return
-    end
-
-    -- prevent restricting twice in a second somehow
-    if debounceLibrary.debounce("left_spawn_point_"..player.properties.peer_id, 0.5) then
-        return
-    end
-
-    -- and teleport
-    player:teleport(getSpawnPoint())
-    chatAnnounce("You cannot leave the play area.", player)
-end)
-
-----------------------------------------------------------------
--- Handlers
-----------------------------------------------------------------
-------------- Disqualify
-local disqualify = eventsLibrary.new("disqualify")
-
----@param player player
-disqualify:connect(function(player)
-    if playerStatesLibrary.hasState(player, "disqualify") then
-        -- already disqualified, so give back participant status
-        playerStatesLibrary.removeState(player, "disqualify")
-        chatAnnounce(player.properties.name.." is now a participant.")
-
-        -- remove tag
-        playerTagsLibrary.removeTag(player, "spectate")
-
-        -- hide ui
-        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
-        if ui then
-            ui:setVisibility(false)
-        end
-    else
-        -- not disqualified, so disqualify
-        playerStatesLibrary.setState(player, "disqualify")
-        chatAnnounce(player.properties.name.." has been eliminated.")
-
-        -- and give random player to spectate
-        local toSpectate = getRandomPlayer(player)
-        playerTagsLibrary.setTag(player, "spectate", toSpectate)
-    end
-end)
-
-------------- Say
-local say = eventsLibrary.new("say")
-
-local function announce(msg)
-    announceLibrary.popupAnnounce(msg, 6)
-    chatAnnounce(msg)
-end
-
----@param sayType "actual"|"fake"
-say:connect(function(sayType, message, effectsPos)
-    -- the main stuffs
-    if sayType == "actual" then
-        announce("[Cuh Says]\n"..message)
-    elseif sayType == "fake" then
-        announce(message)
-    else
-        df.print("invalid cuhSays type", nil, "(say Event Handler)")
-    end
-
-    -- effects
-    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
-
-    local self
-    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
-        if vehicle_id == vehicle.properties.vehicle_id then
-            -- disconnect, no need to listen for vehicle loading anymore
-            self:disconnect()
-
-            -- start effects
-            vehicle:press_button("activate")
-
-            -- despawn
-            cuhFramework.utilities.delay.create(3, function()
-                vehicle:despawn()
-            end)
-        end
-    end)
-end)
-
-------------- Mark Enforcers
-cuhFramework.utilities.loop.create(0.01, function()
-    -- attack enforcer objects to enforcers
-    for _, player in pairs(cuhFramework.players.connectedPlayers) do
-        -- quick check
-        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
-            goto continue
-        end
-
-        -- get object
-        ---@type object
-        local object = playerTagsLibrary.getTag(player, "enforcer_object")
-
-        -- make sure it exists
-        if not object then
-            goto continue
-        end
-
-        -- tp to player
-        local position = player:get_position()
-        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
-
-        object:teleport(position)
-    end
-
-    -- continue replacement
-    ::continue::
-end)
-
+-----------------
+-- [Library | Folder: p4_ui] popup.lua
+-----------------
+---------------------------------------
+------------- UI - Popup
+---------------------------------------
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
-    -- check if admin first
-    if not player.properties.admin then
-        return
-    end
-
-    -- spawn object and attach to player
-    local object = cuhFramework.objects.spawnObject((player:get_position()), 71) -- glowstick
-    playerTagsLibrary.setTag(player, "enforcer_object", object) -- constantly teleported to player by loop above
-end)
-
----@param player player
-eventsLibrary.get("playerLeave"):connect(function(player)
-    -- check if admin first
-    if not player.properties.admin then
-        return
-    end
-
-    -- despawn object
-    ---@type object|nil
-    local object = playerTagsLibrary.getTag(player, "enforcer_object")
-
-    if object then
-        object:despawn()
-    end
-end)
-
-------------- Join Message
----@param player player
-eventsLibrary.get("playerJoin"):connect(function(player)
-    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
-end)
-
-----------------------------------------------------------------
--- UI
-----------------------------------------------------------------
-------------- UI
----@param player player
-eventsLibrary.get("playerJoin"):connect(function(player)
-    -- Spectating UI
-    local spectateUI = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Spectating _", 0, 0.8, player)
-    spectateUI:setVisibility(false)
-
     -- Participant Status
     local status = cuhFramework.ui.screen.create(player.properties.peer_id + 15000, "Participant", 0, -0.6, player)
 
@@ -5450,28 +5156,292 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     end)
 end)
 
-------------- Map UI
----@param player player
-eventsLibrary.get("openMap"):connect(function(player)
-    -- Play Area
-    local spawnPoint = getSpawnPoint()
-    local color = colorLibrary.RGB.new(0, 125, 255, 255)
+-----------------
+-- [Main File] main.lua
+-----------------
+------------------------------------------------------------------------
+    --cuhFramework || An addon creation framework to make SW addon development easier. 
+	-- 		Created by cuh4#7366
+	--		cuhHub - Stormworks Server Hub: https://discord.gg/zTQxaZjwDr
+	--		This framework is open-source: https://github.com/Roozz1/cuhFramework
+------------------------------------------------------------------------
 
-    server.removeMapObject(player.properties.peer_id, player.properties.peer_id + 15000)
-    server.addMapObject(
-        player.properties.peer_id,
-        player.properties.peer_id + 15000,
-        0,
-        9,
-        spawnPoint[13],
-        spawnPoint[15],
-        0,
-        0,
-        0,
-        0,
-        "Play Area",
-        config.game.playAreaSize,
-        "You cannot leave this area.",
-        colorLibrary.RGB.unpack(color)
-    )
+--------------
+--[[
+    cuhHub - Cuh Says
+    Created by cuh4#7366 [cuhHub Developer]
+
+    This addon uses cuhFramework, see above.
+
+    UI IDs:
+        peer_id + 15000 = Play Area Map Object
+        peer_id + 16000 = Status
+        peer_id + 17000 = Nametag
+]]
+--------------
+
+----------------------------------------------------------------
+-- Variables
+----------------------------------------------------------------
+---@type table<integer, player>
+players_unfiltered = {}
+
+----------------------------------------------------------------
+-- Functions
+----------------------------------------------------------------
+------------- Uncategorised
+chatAnnounce = function(message, player)
+    cuhFramework.chat.send_message(miscellaneousLibrary.surround(config.info.addon_name, "[]"), message, player)
+end
+
+notificationAnnounce = function(message, player)
+    cuhFramework.ui.notifications.custom(miscellaneousLibrary.surround(config.info.addon_name, "[]"), message, player, 7)
+end
+
+---@param exception player
+---@return player
+getRandomPlayer = function(exception)
+    local retrieved = cuhFramework.utilities.table.getRandomValue(players_unfiltered)
+
+    if retrieved == exception and exception and miscellaneousLibrary.getPlayerCount() > 1 then
+        return getRandomPlayer(exception)
+    end
+
+    return retrieved
+end
+
+getSpawnPoint = function()
+    return globalStorage:get("spawn_point") or matrix.translation(0, 0, 0)
+end
+
+----------------------------------------------------------------
+-- Setup
+----------------------------------------------------------------
+------------- Reload
+for i = 1, 25000 do
+    server.removePopup(-1, i)
+    server.removeMapID(-1, i)
+    server.despawnVehicle(i, true)
+    server.despawnObject(i, true)
+end
+
+------------- Inits
+debugLibrary.initialize()
+easyPopupsLibrary.initialize()
+eventsLibrary.initialize()
+
+------------- Storages
+globalStorage = storageLibrary.new("Global Storage")
+
+------------- Other
+-- Set Spawn
+globalStorage:add("spawn_point", matrix.translation(-9998.7, 20.4, -6993.7))
+
+----------------------------------------------------------------
+-- Loops
+----------------------------------------------------------------
+------------- Random meteors
+local meteorPositions = {
+    matrix.translation(-9828.7, -0.8, -6582.5),
+    matrix.translation(-9852.5, 11.5, -7414.6),
+    matrix.translation(-10470.8, 12.9, -7333.8)
+}
+
+cuhFramework.utilities.loop.create(20, function()
+    local position = cuhFramework.utilities.table.getRandomValue(meteorPositions)
+    server.spawnMeteor(position, 0.4, false)
+end)
+
+------------- Teleport disqualified
+cuhFramework.utilities.loop.create(0.01, function()
+    -- grab disqualified state
+    local states = playerStatesLibrary.getAll()
+    local disqualified = states["disqualify"]
+
+    if not disqualified then
+        return
+    end
+
+    -- for everyone who is disqualified, teleport em above whoever they are spectating
+    for _, player in pairs(disqualified) do ---@param player player
+        -- teleport above spawn
+        local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, -5)
+        player:teleport(toTeleport)
+    end
+end)
+
+------------- Mark Enforcers
+cuhFramework.utilities.loop.create(0.01, function()
+    -- attack enforcer objects to enforcers
+    for _, player in pairs(cuhFramework.players.connectedPlayers) do
+        -- quick check
+        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
+            goto continue
+        end
+
+        -- get object
+        ---@type object
+        local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+        -- make sure it exists
+        if not object then
+            goto continue
+        end
+
+        -- tp to player
+        local position = player:get_position()
+        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
+
+        object:teleport(position)
+    end
+
+    -- continue replacement
+    ::continue::
+end)
+
+----------------------------------------------------------------
+-- Zones
+----------------------------------------------------------------
+------------- Game Area Zone
+cuhFramework.customZones.createPlayerZone(getSpawnPoint(), config.game.playAreaSize, function(player, entered) ---@param player player
+    -- no need to do anything if the player entered the zone
+    if entered then
+        return
+    end
+
+    -- admin, so ignore
+    if player.properties.admin then
+        return
+    end
+
+    -- prevent restricting twice in a second somehow
+    if debounceLibrary.debounce("left_spawn_point_"..player.properties.peer_id, 0.5) then
+        return
+    end
+
+    -- and teleport
+    player:teleport(getSpawnPoint())
+    chatAnnounce("You cannot leave the play area.", player)
+end)
+
+----------------------------------------------------------------
+-- Handlers
+----------------------------------------------------------------
+------------- Disqualify
+local disqualify = eventsLibrary.new("disqualify")
+
+---@param player player
+disqualify:connect(function(player)
+    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, 3) then
+        return
+    end
+
+    if playerStatesLibrary.hasState(player, "disqualify") then
+        -- already disqualified, so give back participant status
+        playerStatesLibrary.removeState(player, "disqualify")
+        chatAnnounce(player.properties.name.." is now a participant.")
+
+        -- hide ui
+        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
+        if ui then
+            ui:setVisibility(false)
+        end
+    else
+        -- ascend the player into a fire
+        local pos = player:get_position()
+        local dest = cuhFramework.utilities.matrix.offsetPosition(pos, 0, 5, 0)
+
+        local fire = server.spawnFire(dest, 1, 1, true, false, 0, 0)
+
+        local animation = cuhFramework.animation.createLinearAnimation(pos, dest, 0.04, false, function(animation) ---@param animation animation
+            player:teleport(animation.properties.current_pos)
+        end)
+
+        -- wait some time for animation to finish
+        cuhFramework.utilities.delay.create(3, function()
+            -- remove the fire
+            server.despawnObject(fire, true)
+
+            -- stop animation
+            animation:remove()
+
+            -- not disqualified, so disqualify
+            playerStatesLibrary.setState(player, "disqualify")
+            chatAnnounce(player.properties.name.." has been eliminated.")
+        end)
+    end
+end)
+
+------------- Say
+local say = eventsLibrary.new("say")
+
+local function announce(msg)
+    announceLibrary.popupAnnounce(msg, 6)
+    chatAnnounce(msg)
+end
+
+---@param sayType "actual"|"fake"
+say:connect(function(sayType, message, effectsPos)
+    -- the main stuffs
+    if sayType == "actual" then
+        announce("Cuh Says: "..message)
+    elseif sayType == "fake" then
+        announce(message)
+    else
+        df.print("invalid cuhSays type", nil, "(say Event Handler)")
+    end
+
+    -- effects
+    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
+
+    local self
+    self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
+        if vehicle_id == vehicle.properties.vehicle_id then
+            -- disconnect, no need to listen for vehicle loading anymore
+            self:disconnect()
+
+            -- start effects
+            vehicle:press_button("activate")
+
+            -- despawn
+            cuhFramework.utilities.delay.create(3, function()
+                vehicle:despawn()
+            end)
+        end
+    end)
+end)
+
+------------- Mark Enforcers
+---@param player player
+eventsLibrary.get("playerJoin"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- spawn object and attach to player
+    local object = cuhFramework.objects.spawnObject((player:get_position()), 71) -- glowstick
+    playerTagsLibrary.setTag(player, "enforcer_object", object) -- constantly teleported to player by loop above
+end)
+
+---@param player player
+eventsLibrary.get("playerLeave"):connect(function(player)
+    -- check if admin first
+    if not player.properties.admin then
+        return
+    end
+
+    -- despawn object
+    ---@type object|nil
+    local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+    if object then
+        object:despawn()
+    end
+end)
+
+------------- Join Message
+---@param player player
+eventsLibrary.get("playerJoin"):connect(function(player)
+    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
 end)
