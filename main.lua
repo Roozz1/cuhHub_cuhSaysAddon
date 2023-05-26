@@ -92,27 +92,7 @@ cuhFramework.utilities.loop.create(20, function()
     server.spawnMeteor(position, 0.4, false)
 end)
 
-------------- Teleport disqualified to whoever they are spectating
----@param player player
----@return boolean, player|nil
-local function spectate(player)
-    local target = playerTagsLibrary.getTag(player, "spectate")
-
-    -- check if player has target, if not, return false
-    if not target or miscellaneousLibrary.getPlayerCount() <= 1 then
-        df.print("no spectate tag despite player being disqualified!", nil, "(spectate)")
-        return false
-    end
-
-    -- check if player is in the server and isnt disqualified, if so, get new target
-    if not cuhFramework.players.getPlayerByPeerId(target.properties.peer_id) or playerStatesLibrary.hasState(target, "disqualify") or target == player then
-        playerTagsLibrary.setTag(player, "spectate", getRandomPlayer(player))
-        target = playerTagsLibrary.getTag(player, "spectate")
-    end
-
-    return true, target
-end
-
+------------- Teleport disqualified
 cuhFramework.utilities.loop.create(0.01, function()
     -- grab disqualified state
     local states = playerStatesLibrary.getAll()
@@ -124,48 +104,39 @@ cuhFramework.utilities.loop.create(0.01, function()
 
     -- for everyone who is disqualified, teleport em above whoever they are spectating
     for _, player in pairs(disqualified) do ---@param player player
-        -- get player to spectate
-        local canSpectate, target = spectate(player)
-
-        -- teleport above spawn if no one to spectate
-        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
-
-        -- check
-        if not ui then
-            df.print("spectate ui doesnt exist for "..player.properties.name, nil, "disqualify loop")
-            goto continue
-        end
-
-        -- main
-        if canSpectate and target then
-            -- teleport above player
-            local position = target:get_position()
-            position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 10, 0)
-
-            -- and show ui
-            ui:edit("Spectating\n\""..target.properties.name.."\"...")
-            ui:setVisibility(true)
-
-            goto continue
-        else
-            -- showww ui again
-            ui:edit("Spectating\nNo one.")
-            ui:setVisibility(true)
-
-            -- teleport above spawn
-            local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
-            player:teleport(toTeleport)
-
-            goto continue
-        end
-
-        -- and teleport above em
-        local toTeleport = cuhFramework.utilities.matrix.offsetPosition((target:get_position()), 0, 15, 15)
+        -- teleport above spawn
+        local toTeleport = cuhFramework.utilities.matrix.offsetPosition(getSpawnPoint(), 0, 15, 15)
         player:teleport(toTeleport)
-
-        -- thy continue replacement
-        ::continue::
     end
+end)
+
+------------- Mark Enforcers
+cuhFramework.utilities.loop.create(0.01, function()
+    -- attack enforcer objects to enforcers
+    for _, player in pairs(cuhFramework.players.connectedPlayers) do
+        -- quick check
+        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
+            goto continue
+        end
+
+        -- get object
+        ---@type object
+        local object = playerTagsLibrary.getTag(player, "enforcer_object")
+
+        -- make sure it exists
+        if not object then
+            goto continue
+        end
+
+        -- tp to player
+        local position = player:get_position()
+        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
+
+        object:teleport(position)
+    end
+
+    -- continue replacement
+    ::continue::
 end)
 
 ----------------------------------------------------------------
@@ -210,9 +181,6 @@ disqualify:connect(function(player)
         playerStatesLibrary.removeState(player, "disqualify")
         chatAnnounce(player.properties.name.." is now a participant.")
 
-        -- remove tag
-        playerTagsLibrary.removeTag(player, "spectate")
-
         -- hide ui
         local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
         if ui then
@@ -234,10 +202,6 @@ disqualify:connect(function(player)
             -- not disqualified, so disqualify
             playerStatesLibrary.setState(player, "disqualify")
             chatAnnounce(player.properties.name.." has been eliminated.")
-
-            -- and give random player to spectate
-            local toSpectate = getRandomPlayer(player)
-            playerTagsLibrary.setTag(player, "spectate", toSpectate)
         end)
     end
 end)
@@ -282,34 +246,6 @@ say:connect(function(sayType, message, effectsPos)
 end)
 
 ------------- Mark Enforcers
-cuhFramework.utilities.loop.create(0.01, function()
-    -- attack enforcer objects to enforcers
-    for _, player in pairs(cuhFramework.players.connectedPlayers) do
-        -- quick check
-        if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not player.properties.admin then
-            goto continue
-        end
-
-        -- get object
-        ---@type object
-        local object = playerTagsLibrary.getTag(player, "enforcer_object")
-
-        -- make sure it exists
-        if not object then
-            goto continue
-        end
-
-        -- tp to player
-        local position = player:get_position()
-        position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
-
-        object:teleport(position)
-    end
-
-    -- continue replacement
-    ::continue::
-end)
-
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
     -- check if admin first
@@ -342,94 +278,4 @@ end)
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
     chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
-end)
-
-----------------------------------------------------------------
--- UI
-----------------------------------------------------------------
-------------- UI
----@param player player
-eventsLibrary.get("playerJoin"):connect(function(player)
-    -- Spectating UI
-    local spectateUI = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Spectating _", 0, 0.8, player)
-    spectateUI:setVisibility(false)
-
-    -- Participant Status
-    local status = cuhFramework.ui.screen.create(player.properties.peer_id + 15000, "Participant", 0, -0.6, player)
-
-    cuhFramework.utilities.loop.create(0.1, function(id)
-        -- Quick check to see if player still exists
-        if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
-        end
-
-        -- Prepare UI Text
-        local to_show = cuhFramework.utilities.miscellaneous.switchbox(
-            "Participant [:)]",
-            "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
-        )
-
-        -- Make sure UI is all good
-        if not status then
-            return
-        end
-
-        -- Andddd, edit the UI
-        status:edit(to_show)
-    end)
-
-    -- Nametag [Physical]
-    local object_id = player:get_character()
-    local nametag = easyPopupsLibrary.physical.create(player.properties.name, matrix.translation(0, 3, 0), object_id, player.properties.peer_id + 17000, nil, 5)
-
-    cuhFramework.utilities.loop.create(0.1, function(id)
-        -- Quick check to see if player still exists
-        if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
-        end
-
-        -- Prepare UI text... again
-        local to_show = cuhFramework.utilities.miscellaneous.switchbox(
-            "Participant [:)]",
-            "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
-        )
-
-        if player.properties.admin then
-            to_show = "Enforcer [!!]"
-        end
-
-        -- Edit thy nametag UI
-        nametag:edit(player.properties.name.."\n"..to_show)
-        server.removePopup(player.properties.peer_id, nametag.properties.id)
-    end)
-end)
-
-------------- Map UI
----@param player player
-eventsLibrary.get("openMap"):connect(function(player)
-    -- Play Area
-    local spawnPoint = getSpawnPoint()
-    local color = colorLibrary.RGB.new(0, 125, 255, 255)
-
-    server.removeMapObject(player.properties.peer_id, player.properties.peer_id + 15000)
-    server.addMapObject(
-        player.properties.peer_id,
-        player.properties.peer_id + 15000,
-        0,
-        9,
-        spawnPoint[13],
-        spawnPoint[15],
-        0,
-        0,
-        0,
-        0,
-        "Play Area",
-        config.game.playAreaSize,
-        "You cannot leave this area.",
-        colorLibrary.RGB.unpack(color)
-    )
 end)
