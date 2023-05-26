@@ -12,7 +12,7 @@ config = {
 
     game = {
         playAreaSize = 30,
-        timeToFullyEliminate = 0.7
+        timeToFullyEliminate = 1
     },
 
     info = {
@@ -5000,17 +5000,11 @@ cuhFramework.commands.create("disqualify", {"di"}, false, function(message, peer
 
     -- Main
     if not args[1] then
-        return announceLibrary.status.failure("provide name", player)
+        return announceLibrary.status.failure("provide obj type", player)
     end
 
-    -- Disqualify
-    local target = cuhFramework.players.getPlayerByNameWithAllowedPartialName(table.concat(args, " "), false)
-
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(target) then
-        return announceLibrary.status.failure("invalid", player)
-    end
-
-    eventsLibrary.get("disqualify"):fire(target)
+    -- Spawn the object
+    cuhFramework.objects.spawnObject((player:get_position()), tonumber(args[1]) or 1)
 end, "")
 
 -----------------
@@ -5049,7 +5043,36 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local args = {...}
 
     -- Checks
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why code isnt too clean
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why this command isnt too user friendly
+        return
+    end
+
+    if not args[1] then
+        return announceLibrary.status.failure("provide type | 1 = cuh says, 0 = no cuh says, just say", player)
+    end
+
+    -- Main
+    local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
+
+    table.remove(args, 1)
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
+end, "")
+
+-----------------
+-- [Library | Folder: p3_commands] spawn.lua
+-----------------
+---------------------------------------
+------------- Command - Spawn
+---------------------------------------
+
+------------- ?spawn
+cuhFramework.commands.create("spawn", {"sp"}, false, function(message, peer_id, admin, auth, command, ...)
+    -- Get variables
+    local player = cuhFramework.players.getPlayerByPeerId(peer_id)
+    local args = {...}
+
+    -- Checks
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then
         return
     end
 
@@ -5444,5 +5467,5 @@ end)
 ------------- Join Message
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
-    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
+    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.", player)
 end)

@@ -9,7 +9,7 @@ config = {
 
     game = {
         playAreaSize = 30,
-        timeToFullyEliminate = 0.7
+        timeToFullyEliminate = 1
     },
 
     info = {

@@ -282,5 +282,5 @@ end)
 ------------- Join Message
 ---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
-    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.")
+    chatAnnounce("Welcome to the event! The event is simple, follow anything Cuh says IF his message begins with \"Cuh Says\". Last one participating wins.", player)
 end)
