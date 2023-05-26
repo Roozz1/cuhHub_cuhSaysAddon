@@ -9,7 +9,7 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
     local args = {...}
 
     -- Checks
-    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why code isnt too clean
+    if miscellaneousLibrary.unnamedClientOrServerOrDisconnecting(player) or not admin then -- admin command, hence why this command isnt too user friendly
         return
     end
 
