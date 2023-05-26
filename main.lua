@@ -171,7 +171,7 @@ local disqualify = eventsLibrary.new("disqualify")
 
 ---@param player player
 disqualify:connect(function(player)
-    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, 3) then
+    if debounceLibrary.debounce("disqualify_"..player.properties.peer_id, config.game.timeToFullyEliminate) then
         return
     end
 
@@ -192,12 +192,12 @@ disqualify:connect(function(player)
 
         local fire = server.spawnFire(dest, 1, 1, true, false, 0, 0)
 
-        local animation = cuhFramework.animation.createLinearAnimation(pos, dest, 0.04, false, function(animation) ---@param animation animation
+        local animation = cuhFramework.animation.createLinearAnimation(pos, dest, 0.09, false, function(animation) ---@param animation animation
             player:teleport(animation.properties.current_pos)
         end)
 
         -- wait some time for animation to finish
-        cuhFramework.utilities.delay.create(3, function()
+        cuhFramework.utilities.delay.create(config.game.timeToFullyEliminate, function()
             -- remove the fire
             server.despawnObject(fire, true)
 
