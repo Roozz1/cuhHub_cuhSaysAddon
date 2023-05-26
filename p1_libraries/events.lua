@@ -35,16 +35,24 @@ eventsLibrary = {
             name = name,
             connections = {},
 
+            ---@param self event
             connect = function(self, func)
                 table.insert(self.connections, func)
             end,
 
+            ---@param self event
             fire = function(self, ...)
                 for i, v in pairs(self.connections) do
                     v(...)
                 end
             end,
 
+            ---@param self event
+            clear = function(self)
+                self.connections = {}
+            end,
+
+            ---@param self event
             remove = function(self)
                 return eventsLibrary.remove(self.name)
             end

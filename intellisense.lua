@@ -55,6 +55,7 @@
 ---
 ---@field connect function<self, function>
 ---@field fire function<self, any>
+---@field clear function<self>
 ---@field remove function<self>
 
 ------------- Storage
