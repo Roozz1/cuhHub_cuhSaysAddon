@@ -132,10 +132,10 @@ cuhFramework.utilities.loop.create(0.01, function()
         position = cuhFramework.utilities.matrix.offsetPosition(position, 0, 2, 0)
 
         object:teleport(position)
-    end
 
-    -- continue replacement
-    ::continue::
+        -- continue replacement
+        ::continue::
+    end
 end)
 
 ----------------------------------------------------------------
