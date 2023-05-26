@@ -223,7 +223,7 @@ end
 say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
     if sayType == "actual" then
-        announce("[Cuh Says]\n"..message)
+        announce("Cuh Says: "..message)
     elseif sayType == "fake" then
         announce(message)
     else
