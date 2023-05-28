@@ -226,7 +226,7 @@ say:connect(function(sayType, message, effectsPos, optionalTimer)
     end
 
     -- effects
-    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, -10, 0))
+    local vehicle = cuhFramework.vehicles.spawnAddonVehicle(1, cuhFramework.utilities.matrix.offsetPosition(effectsPos, 0, 25, 0))
 
     local self
     self = cuhFramework.callbacks.onVehicleLoad:connect(function(vehicle_id)
