@@ -1,6 +1,8 @@
-##############
-# Half-Assed Combine Files [Combine]
-##############
+# ---------------------------------
+# file combiner
+# don't know what the fuck is going on in this but it works so im not complaining
+# it doesnt work fuck
+# ---------------------------------
 
 #-------------------------
 # Imports
@@ -12,7 +14,7 @@ import os
 #-------------------------
 # Variables
 #-------------------------
-before = "../"
+before = ".."
 file =  "workspace_config.json"
 
 #-------------------------
@@ -26,42 +28,78 @@ def get(key):
         
     return content.get(key, False)
 
-def combine_files(folders, main, dump, files):
-    content_from_files = []
+def iterateFolder(folder: str, exceptions: list = []):
+    if folder in exceptions:
+        return []
     
-    for i in files:
-        with open(f"{before}{i}", "r") as f:
-            content_from_files.append(f"-----------------\n-- [Library] {i}\n-----------------\n{f.read()}")
-    
-    for i in folders:
-        for file in os.listdir(before + i):
-            with open(f"{before}{i}/{file}", "r") as f:
-                content_from_files.append(f"-----------------\n-- [Library | Folder: {i}] {file}\n-----------------\n{f.read()}")
-            
-    with open(before + main, "r") as f:
-        content_from_files.append (f"-----------------\n-- [Main File] {main}\n-----------------\n" + f.read())
+    content = []
+
+    for item in os.listdir(folder):
+        if item in exceptions:
+            continue
         
-    with open(before + dump, "w") as f:
-        f.write("\n\n".join(content_from_files))
+        print(f"scanning {item} of folder {folder}")
+        full = os.path.splitext(item)
+
+        if full[1] == "":
+            print("item is folder")
+            # folder
+            content.extend(iterateFolder(f"{folder}/{item}", exceptions))
+        elif item.endswith(".lua"):
+            print("item is .lua")
+            # file
+            with open(f"{folder}/{item}", "r") as f:
+                fileContent = f.readlines()
+                formattedContent = "".join(fileContent)
+                content.append(f"\n\n-----------------\n-- [Library | Folder: {folder}] {item}\n-----------------\n{formattedContent}")
+        else:     
+            print("item is not right type")
+            print("----")
+
+    return content
+
+def combineFiles(exceptions: list, main: str, dump: str, files: list):
+    # setup
+    exceptions.append(dump)
+    exceptions.append(main)
+    exceptions.append("combine")
+    exceptions.extend(files)
+
+    contentFromFiles = []
+    
+    # files
+    for i in files:
+        with open(f"{before}/{i}", "r") as f:
+            contentFromFiles.append(f"\n\n-----------------\n-- [Library | File] {i}\n-----------------\n{f.read()}")
+    
+    # all folders and contents apart from exceptions
+    print("==================\n" * 3)
+    foldersContents = iterateFolder(before, exceptions)
+    contentFromFiles.extend(foldersContents)
+           
+    # main file 
+    with open(f"{before}/{main}", "r") as f:
+        contentFromFiles.append (f"\n\n-----------------\n-- [Main File] {main}\n-----------------\n" + f.read())
+        
+    # dump into dump file
+    with open(f"{before}/{dump}", "w") as f:
+        f.write("".join(contentFromFiles))
+
+    return contentFromFiles
 
 #-------------------------
 # Main
 #-------------------------
 while True:
-    time.sleep(0.2)
+    time.sleep(3)
     
-    print("----- Combining files...")
+    # print("----- Combining files...")
     
-    try:
-        folders = get("folders")
-        main = get("main")
-        dump = get("dump")
-        files = get("files")
+    exceptions = get("exceptions")
+    main = get("main")
+    dump = get("dump")
+    files = get("files")
 
-        combine_files(folders, main, dump, files)
-    
-        concatenatedFolders = " and ".join(folders)
-        concatenatedFiles = " and ".join(files)
-        print(f"     \_____Successfully combined {concatenatedFiles} and all files in {concatenatedFolders} with {main}.")
-    except Exception as e:
-        print(f"     \_____Failed to combine files.\n          \_____Error: {str(e)}")
+    print(len(combineFiles(exceptions, main, dump, files)))
+
+    # print(f"     \_____Successfully combined stuffs.")

@@ -1,11 +1,8 @@
 {
-     "folders": [
-          "p0_cuhFramework",
-          "p1_libraries",
-          "p2_callbackHandlers",
-          "p3_customCallbackHandlers",
-          "p4_commands",
-          "p5_ui"
+     "exceptions": [
+          ".git",
+          ".vscode",
+          "_build"
      ],
      "files": [
           "config.lua",
