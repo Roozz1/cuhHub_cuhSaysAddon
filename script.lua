@@ -5104,9 +5104,13 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
 
     -- Main
     local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
+    local timer = tonumber(args[2])
 
-    table.remove(args, 1)
-    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
+    for i = 1, 2 do -- remove the first two args to get the full announcement
+        table.remove(args, 1)
+    end
+
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()), timer)
 end, "")
 
 -----------------
@@ -5418,12 +5422,6 @@ disqualify:connect(function(player)
         -- already disqualified, so give back participant status
         playerStatesLibrary.removeState(player, "disqualify")
         chatAnnounce(player.properties.name.." is now a participant.")
-
-        -- hide ui
-        local ui = cuhFramework.ui.screen.get(player.properties.peer_id + 18000)
-        if ui then
-            ui:setVisibility(false)
-        end
     else
         -- ascend the player into a fire
         local pos = player:get_position()
@@ -5453,18 +5451,18 @@ end)
 ------------- Say
 local say = eventsLibrary.new("say")
 
-local function announce(msg)
-    announceLibrary.popupAnnounce(msg, 6)
+local function announce(msg, optionalTimer)
+    announceLibrary.popupAnnounce(msg, optionalTimer or 6)
     chatAnnounce(msg)
 end
 
 ---@param sayType "actual"|"fake"
-say:connect(function(sayType, message, effectsPos)
+say:connect(function(sayType, message, effectsPos, optionalTimer)
     -- the main stuffs
     if sayType == "actual" then
-        announce("Cuh Says: "..message)
+        announce("Cuh Says: "..message, optionalTimer)
     elseif sayType == "fake" then
-        announce(message)
+        announce(message, optionalTimer)
     else
         df.print("invalid cuhSays type", nil, "(say Event Handler)")
     end
