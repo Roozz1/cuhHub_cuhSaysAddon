@@ -16,6 +16,7 @@
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
+        peer_id + 18000 = Enforcers
 ]]
 --------------
 

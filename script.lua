@@ -5171,7 +5171,7 @@ eventsLibrary.get("playerJoin"):connect(function(player)
         end
 
         -- Andddd, edit the UI
-        status:edit(to_show)
+        status:edit(player.properties.name.."\n"..to_show)
     end)
 
     -- Nametag [Physical]
@@ -5200,6 +5200,37 @@ eventsLibrary.get("playerJoin"):connect(function(player)
         nametag:edit(player.properties.name.."\n"..to_show)
         server.removePopup(player.properties.peer_id, nametag.properties.id)
     end)
+
+    -- Enforcers
+    local enforcers = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Enforcers: N/A", 0, 0.92, player)
+    local enforcersInServer = {} ---@type table<integer, player>
+
+    eventsLibrary.get("playerJoin"):connect(function(newPlayer) ---@param newPlayer player
+        if not newPlayer.properties.admin then
+            return
+        end
+
+        table.insert(enforcersInServer, player.properties.name)
+        enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
+    end)
+
+    eventsLibrary.get("playerLeave"):connect(function(leftPlayer) ---@param leftPlayer player
+        if not leftPlayer.properties.admin then
+            return
+        end
+
+        for i, v in pairs(enforcersInServer) do
+            if v.properties.peer_id == leftPlayer.properties.peer_id then
+                table.remove(enforcersInServer, i)
+            end
+        end
+
+        if #enforcersInServer <= 0 then
+            enforcers:edit("Enforcers: N/A")
+        else
+            enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
+        end
+    end)
 end)
 
 -----------------
@@ -5223,6 +5254,7 @@ end)
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
+        peer_id + 18000 = Enforcers
 ]]
 --------------
 
