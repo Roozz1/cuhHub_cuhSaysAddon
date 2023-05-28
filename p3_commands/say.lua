@@ -19,11 +19,7 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
 
     -- Main
     local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
-    local timer = tonumber(args[2])
 
-    for i = 1, cuhFramework.utilities.miscellaneous.switchbox(1, 2, timer) do -- remove the first one or two args to get the full announcement
-        table.remove(args, 1)
-    end
-
-    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()), timer)
+    table.remove(args, 1)
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")

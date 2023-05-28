@@ -4649,6 +4649,14 @@ playerStatesLibrary = {
         end
     end,
 
+    getState = function(stateName)
+        if not playerStates[stateName] then
+            playerStates[stateName] = {}
+        end
+
+        return playerStates[stateName]
+    end,
+
     getAll = function()
         return playerStates
     end
@@ -4884,6 +4892,11 @@ cuhFramework.callbacks.onObjectLoad:connect(function(object_id)
 
     -- Teleport
     player:teleport(getSpawnPoint())
+
+    -- Disqualify if someone has already been disqualified
+    if cuhFramework.utilities.table.getValueCountOfTable(playerStatesLibrary.getState("disqualified")) >= 1 then
+        eventsLibrary.get("disqualify"):fire(player)
+    end
 end)
 
 -----------------
@@ -5104,13 +5117,9 @@ cuhFramework.commands.create("say", {"s"}, false, function(message, peer_id, adm
 
     -- Main
     local saysType = cuhFramework.utilities.miscellaneous.switchbox("fake", "actual", args[1] == "1")
-    local timer = tonumber(args[2])
 
-    for i = 1, cuhFramework.utilities.miscellaneous.switchbox(1, 2, timer) do -- remove the first one or two args to get the full announcement
-        table.remove(args, 1)
-    end
-
-    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()), timer)
+    table.remove(args, 1)
+    eventsLibrary.get("say"):fire(saysType, table.concat(args, " "), (player:get_position()))
 end, "")
 
 -----------------
@@ -5172,15 +5181,14 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     cuhFramework.utilities.loop.create(0.1, function(id)
         -- Quick check to see if player still exists
         if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
+            return cuhFramework.utilities.loop.remove(id)
         end
 
         -- Prepare UI Text
         local to_show = cuhFramework.utilities.miscellaneous.switchbox(
             "Participant [:)]",
             "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
+            playerStatesLibrary.hasState(player, "disqualified")
         )
 
         -- Make sure UI is all good
@@ -5199,15 +5207,14 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     cuhFramework.utilities.loop.create(0.1, function(id)
         -- Quick check to see if player still exists
         if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
+            return cuhFramework.utilities.loop.remove(id)
         end
 
         -- Prepare UI text... again
         local to_show = cuhFramework.utilities.miscellaneous.switchbox(
             "Participant [:)]",
             "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
+            playerStatesLibrary.hasState(player, "disqualified")
         )
 
         if player.properties.admin then
@@ -5217,37 +5224,6 @@ eventsLibrary.get("playerJoin"):connect(function(player)
         -- Edit thy nametag UI
         nametag:edit(player.properties.name.."\n"..to_show)
         server.removePopup(player.properties.peer_id, nametag.properties.id)
-    end)
-
-    -- Enforcers
-    local enforcers = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Enforcers: N/A", 0, 0.92, player)
-    local enforcersInServer = {} ---@type table<integer, player>
-
-    eventsLibrary.get("playerJoin"):connect(function(target) ---@param target player
-        if not enforcerUIChecks(player, target) then
-            return
-        end
-
-        table.insert(enforcersInServer, target.properties.name)
-        enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
-    end)
-
-    eventsLibrary.get("playerLeave"):connect(function(target) ---@param target player
-        if not enforcerUIChecks(player, target) then
-            return
-        end
-
-        for i, v in pairs(enforcersInServer) do
-            if v.properties.peer_id == target.properties.peer_id then
-                table.remove(enforcersInServer, i)
-            end
-        end
-
-        if #enforcersInServer <= 0 then
-            enforcers:edit("Enforcers: N/A")
-        else
-            enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
-        end
     end)
 end)
 
@@ -5272,7 +5248,6 @@ end)
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
-        peer_id + 18000 = Enforcers
 ]]
 --------------
 
@@ -5351,8 +5326,7 @@ end)
 ------------- Teleport disqualified
 cuhFramework.utilities.loop.create(0.01, function()
     -- grab disqualified state
-    local states = playerStatesLibrary.getAll()
-    local disqualified = states["disqualify"]
+    local disqualified = playerStatesLibrary.getState("disqualified")
 
     if not disqualified then
         return
@@ -5432,9 +5406,9 @@ disqualify:connect(function(player)
         return
     end
 
-    if playerStatesLibrary.hasState(player, "disqualify") then
+    if playerStatesLibrary.hasState(player, "disqualified") then
         -- already disqualified, so give back participant status
-        playerStatesLibrary.removeState(player, "disqualify")
+        playerStatesLibrary.removeState(player, "disqualified")
         chatAnnounce(player.properties.name.." is now a participant.")
     else
         -- ascend the player into a fire
@@ -5456,7 +5430,7 @@ disqualify:connect(function(player)
             animation:remove()
 
             -- not disqualified, so disqualify
-            playerStatesLibrary.setState(player, "disqualify")
+            playerStatesLibrary.setState(player, "disqualified")
             chatAnnounce(player.properties.name.." has been eliminated.")
         end)
     end
@@ -5465,18 +5439,18 @@ end)
 ------------- Say
 local say = eventsLibrary.new("say")
 
-local function announce(msg, optionalTimer)
-    announceLibrary.popupAnnounce(msg, optionalTimer or 6)
+local function announce(msg)
+    announceLibrary.popupAnnounce(msg, 6)
     chatAnnounce(msg)
 end
 
 ---@param sayType "actual"|"fake"
-say:connect(function(sayType, message, effectsPos, optionalTimer)
+say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
     if sayType == "actual" then
-        announce("Cuh Says: "..message, optionalTimer)
+        announce("Cuh Says: "..message)
     elseif sayType == "fake" then
-        announce(message, optionalTimer)
+        announce(message)
     else
         df.print("invalid cuhSays type", nil, "(say Event Handler)")
     end

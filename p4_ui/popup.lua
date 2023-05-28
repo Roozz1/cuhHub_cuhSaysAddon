@@ -23,15 +23,14 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     cuhFramework.utilities.loop.create(0.1, function(id)
         -- Quick check to see if player still exists
         if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
+            return cuhFramework.utilities.loop.remove(id)
         end
 
         -- Prepare UI Text
         local to_show = cuhFramework.utilities.miscellaneous.switchbox(
             "Participant [:)]",
             "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
+            playerStatesLibrary.hasState(player, "disqualified")
         )
 
         -- Make sure UI is all good
@@ -50,15 +49,14 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     cuhFramework.utilities.loop.create(0.1, function(id)
         -- Quick check to see if player still exists
         if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
-            cuhFramework.utilities.loop.ongoingLoops[id] = nil
-            return
+            return cuhFramework.utilities.loop.remove(id)
         end
 
         -- Prepare UI text... again
         local to_show = cuhFramework.utilities.miscellaneous.switchbox(
             "Participant [:)]",
             "Eliminated [!]",
-            playerStatesLibrary.hasState(player, "disqualify")
+            playerStatesLibrary.hasState(player, "disqualified")
         )
 
         if player.properties.admin then
@@ -68,36 +66,5 @@ eventsLibrary.get("playerJoin"):connect(function(player)
         -- Edit thy nametag UI
         nametag:edit(player.properties.name.."\n"..to_show)
         server.removePopup(player.properties.peer_id, nametag.properties.id)
-    end)
-
-    -- Enforcers
-    local enforcers = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Enforcers: N/A", 0, 0.92, player)
-    local enforcersInServer = {} ---@type table<integer, player>
-
-    eventsLibrary.get("playerJoin"):connect(function(target) ---@param target player
-        if not enforcerUIChecks(player, target) then
-            return
-        end
-
-        table.insert(enforcersInServer, target.properties.name)
-        enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
-    end)
-
-    eventsLibrary.get("playerLeave"):connect(function(target) ---@param target player
-        if not enforcerUIChecks(player, target) then
-            return
-        end
-
-        for i, v in pairs(enforcersInServer) do
-            if v.properties.peer_id == target.properties.peer_id then
-                table.remove(enforcersInServer, i)
-            end
-        end
-
-        if #enforcersInServer <= 0 then
-            enforcers:edit("Enforcers: N/A")
-        else
-            enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
-        end
     end)
 end)

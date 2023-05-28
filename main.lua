@@ -16,7 +16,6 @@
         peer_id + 15000 = Play Area Map Object
         peer_id + 16000 = Status
         peer_id + 17000 = Nametag
-        peer_id + 18000 = Enforcers
 ]]
 --------------
 
@@ -95,8 +94,7 @@ end)
 ------------- Teleport disqualified
 cuhFramework.utilities.loop.create(0.01, function()
     -- grab disqualified state
-    local states = playerStatesLibrary.getAll()
-    local disqualified = states["disqualify"]
+    local disqualified = playerStatesLibrary.getState("disqualified")
 
     if not disqualified then
         return
@@ -176,9 +174,9 @@ disqualify:connect(function(player)
         return
     end
 
-    if playerStatesLibrary.hasState(player, "disqualify") then
+    if playerStatesLibrary.hasState(player, "disqualified") then
         -- already disqualified, so give back participant status
-        playerStatesLibrary.removeState(player, "disqualify")
+        playerStatesLibrary.removeState(player, "disqualified")
         chatAnnounce(player.properties.name.." is now a participant.")
     else
         -- ascend the player into a fire
@@ -200,7 +198,7 @@ disqualify:connect(function(player)
             animation:remove()
 
             -- not disqualified, so disqualify
-            playerStatesLibrary.setState(player, "disqualify")
+            playerStatesLibrary.setState(player, "disqualified")
             chatAnnounce(player.properties.name.." has been eliminated.")
         end)
     end
@@ -209,18 +207,18 @@ end)
 ------------- Say
 local say = eventsLibrary.new("say")
 
-local function announce(msg, optionalTimer)
-    announceLibrary.popupAnnounce(msg, optionalTimer or 6)
+local function announce(msg)
+    announceLibrary.popupAnnounce(msg, 6)
     chatAnnounce(msg)
 end
 
 ---@param sayType "actual"|"fake"
-say:connect(function(sayType, message, effectsPos, optionalTimer)
+say:connect(function(sayType, message, effectsPos)
     -- the main stuffs
     if sayType == "actual" then
-        announce("Cuh Says: "..message, optionalTimer)
+        announce("Cuh Says: "..message)
     elseif sayType == "fake" then
-        announce(message, optionalTimer)
+        announce(message)
     else
         df.print("invalid cuhSays type", nil, "(say Event Handler)")
     end
