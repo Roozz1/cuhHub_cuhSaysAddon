@@ -3,8 +3,9 @@
           "p0_cuhFramework",
           "p1_libraries",
           "p2_callbackHandlers",
-          "p3_commands",
-          "p4_ui"
+          "p3_customCallbackHandlers",
+          "p4_commands",
+          "p5_ui"
      ],
      "files": [
           "config.lua",
