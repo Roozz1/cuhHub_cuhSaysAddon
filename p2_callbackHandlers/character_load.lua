@@ -17,4 +17,9 @@ cuhFramework.callbacks.onObjectLoad:connect(function(object_id)
 
     -- Teleport
     player:teleport(getSpawnPoint())
+
+    -- Disqualify if someone has already been disqualified
+    if cuhFramework.utilities.table.getValueCountOfTable(playerStatesLibrary.getState("disqualified")) >= 1 then
+        eventsLibrary.get("disqualify"):fire(player)
+    end
 end)

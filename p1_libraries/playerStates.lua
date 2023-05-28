@@ -48,6 +48,14 @@ playerStatesLibrary = {
         end
     end,
 
+    getState = function(stateName)
+        if not playerStates[stateName] then
+            playerStates[stateName] = {}
+        end
+
+        return playerStates[stateName]
+    end,
+
     getAll = function()
         return playerStates
     end
