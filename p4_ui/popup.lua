@@ -2,6 +2,20 @@
 ------------- UI - Popup
 ---------------------------------------
 ---@param player player
+---@param target player
+local function enforcerUIChecks(player, target)
+    if not cuhFramework.players.getPlayerByPeerId(player.properties.peer_id) then
+        return false
+    end
+
+    if not target.properties.admin then
+        return false
+    end
+
+    return true
+end
+
+---@param player player
 eventsLibrary.get("playerJoin"):connect(function(player)
     -- Participant Status
     local status = cuhFramework.ui.screen.create(player.properties.peer_id + 15000, "Participant", 0, -0.6, player)
@@ -60,22 +74,22 @@ eventsLibrary.get("playerJoin"):connect(function(player)
     local enforcers = cuhFramework.ui.screen.create(player.properties.peer_id + 18000, "Enforcers: N/A", 0, 0.92, player)
     local enforcersInServer = {} ---@type table<integer, player>
 
-    eventsLibrary.get("playerJoin"):connect(function(newPlayer) ---@param newPlayer player
-        if not newPlayer.properties.admin then
+    eventsLibrary.get("playerJoin"):connect(function(target) ---@param target player
+        if not enforcerUIChecks(player, target) then
             return
         end
 
-        table.insert(enforcersInServer, player.properties.name)
+        table.insert(enforcersInServer, target.properties.name)
         enforcers:edit("Enforcers: "..table.concat(enforcersInServer, ", "))
     end)
 
-    eventsLibrary.get("playerLeave"):connect(function(leftPlayer) ---@param leftPlayer player
-        if not leftPlayer.properties.admin then
+    eventsLibrary.get("playerLeave"):connect(function(target) ---@param target player
+        if not enforcerUIChecks(player, target) then
             return
         end
 
         for i, v in pairs(enforcersInServer) do
-            if v.properties.peer_id == leftPlayer.properties.peer_id then
+            if v.properties.peer_id == target.properties.peer_id then
                 table.remove(enforcersInServer, i)
             end
         end
